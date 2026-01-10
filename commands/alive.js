@@ -1,51 +1,57 @@
-import os from 'os'
+// ==================== alive.js ====================
 
 export default {
   name: 'alive',
-  aliases: ['bot', 'status'],
-  category: 'core',
-  desc: 'Statut sombre du bot',
+  alias: ['status', 'bot'],
+  description: 'Vérifie si le bot est en ligne, version DARK & EMPIRE',
+  category: 'info',
 
   async execute(sock, m) {
     try {
-      const uptime = process.uptime()
-      const h = Math.floor(uptime / 3600)
-      const min = Math.floor((uptime % 3600) / 60)
-      const sec = Math.floor(uptime % 60)
-
-      const ram = (process.memoryUsage().rss / 1024 / 1024).toFixed(1)
+      const mode = global.mode || 'public';
 
       const text = `
-☠️☠️☠️☠️☠️☠️☠️☠️☠️
+⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+👁️ 𝐓𝐇𝐄_𝐏𝐀𝐈𝐍-MD IS WATCHING 👁️
+⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-   𝐓𝐇𝐄_𝐏𝐀𝐈𝐍-𝐌𝐃
-「 𝘛𝘩𝘦 𝘱𝘢𝘪𝘯 𝘪𝘴 𝘢𝘭𝘪𝘷𝘦… 」
+💀 *STATUS* : 𝐀𝐋𝐈𝐕𝐄 & 𝐔𝐍𝐒𝐓𝐎𝐏𝐏𝐀𝐁𝐋𝐄
+🩸 *MODE* : ${mode.toUpperCase()}
+⚡ *UPTIME* : ${formatUptime(process.uptime())}
+🧠 *ENGINE* : Baileys MD
+🛡️ *PERFORMANCE* : Optimale & Invisible
 
-🩸 Statut : *ÉVEILLÉ*
-⏳ Uptime : ${h}h ${min}m ${sec}s
-🧠 Mémoire : ${ram} MB
-⚙️ Système : ${os.platform()}
-🕯 Prefix : ${global.PREFIX}
+👑 *OWNER* : Toujours présent, même dans l’ombre
+☠️ *WARNING* : Messagerie surveillée…
 
-❝ Celui qui invoque la douleur
-   ne trouve jamais le silence ❞
-
-☠️☠️☠️☠️☠️☠️☠️☠️☠️
-      `.trim()
+> _The power of 𝐓𝐇𝐄_𝐏𝐀𝐈𝐍-MD flows through this bot_
+⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+`;
 
       await sock.sendMessage(
         m.chat,
         { text },
         { quoted: m }
-      )
+      );
 
     } catch (err) {
-      console.error('❌ Alive dark error:', err)
-      await sock.sendMessage(
-        m.chat,
-        { text: '☠️ 𝐓𝐇𝐄_𝐏𝐀𝐈𝐍-𝐌𝐃 murmure encore depuis l’ombre…' },
-        { quoted: m }
-      )
+      console.error('Alive command error:', err);
     }
   }
+};
+
+// ==================== Utils ====================
+function formatUptime(seconds) {
+  seconds = Number(seconds);
+  const d = Math.floor(seconds / (3600 * 24));
+  const h = Math.floor((seconds % (3600 * 24)) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+
+  return [
+    d ? `${d}d` : null,
+    h ? `${h}h` : null,
+    m ? `${m}m` : null,
+    `${s}s`
+  ].filter(Boolean).join(' ');
 }
