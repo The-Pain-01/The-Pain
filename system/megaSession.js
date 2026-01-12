@@ -22,7 +22,7 @@ export async function loadSessionFromMega(credsPath) {
 
   await initMega();
 
-  const [fileID, key] = global.SESSION_ID.replace('kaya~', '').split('#');
+  const [fileID, key] = global.SESSION_ID.replace('pain~', '').split('#');
   if (!fileID || !key) {
     console.error('❌ SESSION_ID MEGA invalide');
     return;
