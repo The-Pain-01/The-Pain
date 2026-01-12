@@ -18,7 +18,7 @@ async function initMega() {
 
 export async function loadSessionFromMega(credsPath) {
   if (fs.existsSync(credsPath)) return;
-  if (!global.SESSION_ID?.startsWith('kaya~')) return;
+  if (!global.SESSION_ID?.startsWith('pain~')) return;
 
   await initMega();
 
