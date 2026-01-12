@@ -25,13 +25,19 @@ export function setBotImage(buffer) {
   fs.writeFileSync(customPath, buffer);
 }
 
-// Connection message (uses default image for reference)
+// Connection message — Ritual / Invocation style
 export function connectionMessage() {
   return `
-╭───❖ ${BOT_NAME} ❖────╮
-│ 🤖 Bot : ${BOT_NAME} — CONNECTED
-│ ⏱️ Date & Time : ${new Date().toLocaleString()}
-│ ⚡ Status : Online & Ready
-╰─────────────────────╯
+╭───── 🕯️ ${BOT_NAME} 🕯️ ─────╮
+│ 🔮 RITUAL : COMPLETED
+│ 🩸 SEAL   : BROKEN
+│ ❄️ VOID   : OPEN
+│ 👁️ EYES   : WATCHING
+│ 🕰️ ${new Date().toLocaleString()}
+├───────────────────────────┤
+│ “The circle is drawn.
+│ The name was spoken.
+│ Pain has answered.”
+╰───────────────────────────╯
 `;
 }
