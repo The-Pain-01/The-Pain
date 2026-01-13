@@ -1,18 +1,18 @@
 export default {
   name: 'sticker',
   async execute(sock, m) {
-    if (!m.quoted || !m.quoted.message?.imageMessage) {
-      return sock.sendMessage(m.chat, { text: '❌ Réponds à une image.' }, { quoted: m });
+    const q = m.quoted || m;
+
+    if (!q.message?.imageMessage) {
+      return sock.sendMessage(m.chat, {
+        text: '🧊 Réponds à une image pour créer un sticker.'
+      }, { quoted: m });
     }
 
-    const media = await sock.downloadMediaMessage(m.quoted);
+    const buffer = await sock.downloadMediaMessage(q);
 
-    await sock.sendMessage(
-      m.chat,
-      {
-        sticker: media
-      },
-      { quoted: m }
-    );
+    await sock.sendMessage(m.chat, {
+      sticker: buffer
+    }, { quoted: m });
   }
 };
