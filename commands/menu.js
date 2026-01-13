@@ -1,5 +1,3 @@
-import { BOT_NAME, getBotImage } from '../botAssets.js';
-
 export default {
   name: 'menu',
   async execute(sock, m) {
@@ -7,6 +5,11 @@ export default {
     const h = Math.floor(uptime / 3600);
     const min = Math.floor((uptime % 3600) / 60);
     const sec = Math.floor(uptime % 60);
+
+    const BOT_NAME = global.BOT_NAME || 'THE PAIN';
+
+    // ✅ IMAGE DIRECTEMENT DANS LE FICHIER
+    const BOT_IMAGE = 'https://files.catbox.moe/10v9f5.jpg';
 
     const menu = `
 ╔══════════════════════╗
@@ -16,7 +19,7 @@ export default {
 ╭─📡 BOT INFO
 │ 👁️ Bot : ${BOT_NAME}
 │ 👤 User : @${m.sender.split('@')[0]}
-│ ⚙️ Mode : ${global.mode}
+│ ⚙️ Mode : ${global.mode || 'public'}
 │ ⏳ Uptime : ${h}h ${min}m ${sec}s
 ╰───────────────
 
@@ -76,10 +79,10 @@ export default {
 │ .vv
 │ .take
 │ .shorturl
+│ .url
 │ .translate
 │ .tts
 │ .save
-│ .url
 ╰───────────────
 
 ╭─☠️ FUN / DARK
@@ -87,7 +90,6 @@ export default {
 │ .painfact
 │ .curse
 │ .insult
-│ .fear
 │ .shadow
 │ .summon
 │ .deathclock
@@ -99,7 +101,7 @@ export default {
     await sock.sendMessage(
       m.chat,
       {
-        image: { url: getBotImage() },
+        image: { url: BOT_IMAGE },
         caption: menu,
         mentions: [m.sender]
       },
