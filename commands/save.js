@@ -1,48 +1,43 @@
-// ==================== commands/save.js ====================
 export default {
   name: 'save',
-  description: 'Sauvegarde un media view-once et l’envoie en privé à l’utilisateur',
-  category: 'utilitaires',
-
   async execute(sock, m) {
-    try {
-      const msg = m.message;
-      if (!msg) return;
+    const q = m.quoted || m;
+    const msg = q.message || {};
+    const type = Object.keys(msg)[0];
 
-      const viewOnceMsg = msg.viewOnceMessage;
-      if (!viewOnceMsg) {
-        return await sock.sendMessage(
-          m.chat,
-          { text: '💀 Aucun media view-once trouvé dans ce message.' },
-          { quoted: m }
-        );
-      }
-
-      const media = viewOnceMsg.message.imageMessage || viewOnceMsg.message.videoMessage;
-      if (!media) return;
-
-      await sock.sendMessage(
-        m.sender,
-        {
-          image: media.imageData ? { buffer: media.imageData } : undefined,
-          video: media.videoData ? { buffer: media.videoData } : undefined,
-          caption: '☠️ DARK SAVE VIEW-ONCE ☠️',
-        }
+    if (!type || !type.includes('Message')) {
+      return sock.sendMessage(
+        m.chat,
+        { text: '📥 Réponds à une image, vidéo, audio ou document.' },
+        { quoted: m }
       );
+    }
 
+    try {
+      const buffer = await sock.downloadMediaMessage(q);
+      const userJid = m.sender;
+
+      await sock.sendMessage(userJid, {
+        document: buffer,
+        fileName: `THE_PAIN_MD_saved_${Date.now()}`,
+        mimetype: msg[type].mimetype,
+        caption: '🩸 *Média sauvegardé par THE_PAIN-MD*'
+      });
+
+      // Confirmation dans le chat d'origine
       await sock.sendMessage(
         m.chat,
-        { text: '🩸 Media view-once sauvegardé et envoyé en privé !' },
+        { text: '✅ Média envoyé en privé.' },
         { quoted: m }
       );
 
     } catch (err) {
-      console.error('Save command error:', err);
+      console.error(err);
       await sock.sendMessage(
         m.chat,
-        { text: '☠️ Impossible de sauvegarder le media view-once.' },
+        { text: '❌ Impossible d’envoyer le média en privé. Ouvre le DM du bot.' },
         { quoted: m }
       );
     }
-  },
+  }
 };
