@@ -1,20 +1,21 @@
-import gTTS from 'gtts.js'; // Exemple
-
 export default {
   name: 'tts',
-  description: 'Convertit un texte en audio',
-  category: 'utilitaires',
   async execute(sock, m, args) {
-    if (!args[0]) return sock.sendMessage(m.chat, { text: '💀 Texte manquant pour TTS.' }, { quoted: m });
+    if (!args.length)
+      return sock.sendMessage(m.chat, { text: '❌ Texte manquant.' }, { quoted: m });
 
-    const text = args.join(' ');
-    const tts = new gTTS(text, 'fr');
-    const buffer = await tts.saveBuffer();
+    const text = encodeURIComponent(args.join(' '));
+
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${text}&tl=fr&client=tw-ob`;
 
     await sock.sendMessage(
       m.chat,
-      { audio: buffer, mimetype: 'audio/mp4', ptt: false },
+      {
+        audio: { url },
+        mimetype: 'audio/mpeg',
+        ptt: true
+      },
       { quoted: m }
     );
-  },
+  }
 };
