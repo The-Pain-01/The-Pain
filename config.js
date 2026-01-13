@@ -11,13 +11,13 @@ const __dirname = path.dirname(__filename);
 const defaultConfig = {
   // 🔑 Identifiants
   SESSION_ID: "",
-  OWNERS: ["27727500078"], // ← tableau des owners, uniquement les numéros
+  OWNERS: ["27727500078"], // numéros sans +
   PREFIX: ".",
   TIMEZONE: "Africa/Kinshasa",
   VERSION: "2.0.0",
 
   // 🤖 Paramètres du bot
-  public: true,
+  MODE: "public", // public | private | self
   autoRead: true,
   restrict: false,
   botImage: "",
@@ -30,38 +30,46 @@ const defaultConfig = {
     telegram: "https://t.me/zonetech2"
   }
 };
+
 // ================== CHEMINS DES DONNÉES ==================
 const dataDir = path.join(__dirname, "data");
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
 const configPath = path.join(dataDir, "config.json");
 
-// ================== CRÉATION DU FICHIER SI INEXISTANT ==================
+// ================== CRÉATION SI INEXISTANT ==================
 if (!fs.existsSync(configPath)) {
   fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2));
-  console.log("✅ config.json créé avec les paramètres par défaut");
+  console.log("✅ config.json créé");
 }
 
-// ================== CHARGEMENT DE LA CONFIG ==================
+// ================== CHARGEMENT ==================
 let userConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 
 // ================== VARIABLES GLOBALES ==================
 global.blockInbox = userConfig.blockInbox ?? false;
 
-// 🔹 Initialisation des owners
+// Owners
 global.owner = Array.isArray(userConfig.OWNERS)
   ? userConfig.OWNERS
-  : [userConfig.OWNER_NUMBER].filter(Boolean);
+  : [];
 
-// ================== FONCTION DE SAUVEGARDE ==================
-export function saveConfig(updatedConfig) {
+// Mode du bot
+global.mode = userConfig.MODE || "public";
+
+// ================== SAUVEGARDE ==================
+export function saveConfig(updatedConfig = {}) {
   userConfig = { ...userConfig, ...updatedConfig };
   fs.writeFileSync(configPath, JSON.stringify(userConfig, null, 2));
 
-  // Mise à jour des variables globales
   if (typeof updatedConfig.blockInbox !== "undefined") {
     global.blockInbox = updatedConfig.blockInbox;
   }
+
+  if (typeof updatedConfig.MODE !== "undefined") {
+    global.mode = updatedConfig.MODE;
+  }
+
   if (Array.isArray(updatedConfig.OWNERS)) {
     global.owner = updatedConfig.OWNERS;
   }
