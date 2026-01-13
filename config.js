@@ -25,8 +25,8 @@ const defaultConfig = {
 
   // 🌐 Liens utiles
   LINKS: {
-    group: "https://chat.whatsapp.com/DoMh6jWjly2ErwVppmCGZo",
-    channel: "https://whatsapp.com/channel/0029Vb6FFPM002T3SKA6bb2D",
+    group: "https://chat.whatsapp.com/EVqFbDrtwqEAxjF2FQ9pWl",
+    channel: "https://whatsapp.com/channel/0029Vb7FTvDICVfgeK27ul2S",
     telegram: "https://t.me/zonetech2"
   }
 };
