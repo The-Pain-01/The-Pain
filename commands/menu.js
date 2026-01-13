@@ -1,4 +1,4 @@
-import { BOT_NAME, getBotImage } from '../../botAssets.js';
+import { BOT_NAME, getBotImage } from '../botAssets.js';
 
 export default {
   name: 'menu',
