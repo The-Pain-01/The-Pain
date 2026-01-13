@@ -79,6 +79,7 @@ export default {
 │ .translate
 │ .tts
 │ .save
+│ .url
 ╰───────────────
 
 ╭─☠️ FUN / DARK
