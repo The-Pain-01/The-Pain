@@ -1,5 +1,5 @@
 {
-  "name": "KAYA-MD",
+  "name": "THE_PAIN-MD",
   "version": "2.0.0",
   "description": "WhatsApp Multi-Device Bot using Baileys v7",
   "main": "index.js",
@@ -12,7 +12,7 @@
     "restart": "node --max-old-space-size=4096 index.js",
     "dev": "nodemon index.js"
   },
-  "author": "Kaya Tech",
+  "author": "The Pain Tech",
   "license": "MIT",
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc.6",
