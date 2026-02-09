@@ -6,9 +6,9 @@ export default {
     const min = Math.floor((uptime % 3600) / 60);
     const sec = Math.floor(uptime % 60);
 
-    const BOT_NAME = global.BOT_NAME || 'THE PAIN';
+    const BOT_NAME = global.BOT_NAME || '𝐓𝐇𝐄 𝐏𝐀𝐈𝐍-MD';
+    const MODE = global.mode || 'public';
 
-    // ✅ IMAGE DIRECTEMENT DANS LE FICHIER
     const BOT_IMAGE = 'https://files.catbox.moe/10v9f5.jpg';
 
     const menu = `
@@ -17,82 +17,86 @@ export default {
 ╚══════════════════════╝
 
 ╭─📡 BOT INFO
-│ 👁️ Bot : ${BOT_NAME}
-│ 👤 User : @${m.sender.split('@')[0]}
-│ ⚙️ Mode : ${global.mode || 'public'}
+│ 🤖 Bot : ${BOT_NAME}
+│ 👤 User : ${m.pushName || 'Utilisateur'}
+│ 🧩 Commandes : ${Object.keys(global.commands || {}).length}
+│ ⚙️ Mode : ${MODE}
 │ ⏳ Uptime : ${h}h ${min}m ${sec}s
 ╰───────────────
 
 🩸 DARK COMMANDS 🩸
 
 ╭─👁️ GÉNÉRAL
-│ .menu
 │ .alive
-│ .ping
 │ .botinfo
-│ .rules
+│ .menu
 │ .mode
-│ .owner
-│ .support
-│ .myid
 │ .mychannelid
+│ .myid
+│ .owner
+│ .ping
+│ .rules
+│ .support
 ╰───────────────
 
 ╭─⚙️ PARAMÈTRES
-│ .on / .off
-│ .setname
-│ .setdesc
 │ .autoread on/off
-│ .typing on/off
+│ .off
+│ .on
 │ .recording on/off
+│ .setdesc
+│ .setname
+│ .typing on/off
 ╰───────────────
 
 ╭─🛡️ MODÉRATION
-│ .ban / .unban
-│ .mute / .unmute
-│ .warn
-│ .purge
-│ .antilink on/off
 │ .antibot on/off
+│ .antilink on/off
+│ .ban
+│ .mute
+│ .purge
+│ .unban
+│ .unmute
+│ .warn
 ╰───────────────
 
 ╭─👥 GROUPE
 │ .add
+│ .admins
+│ .demote
+│ .goodbye
+│ .hidetag
 │ .kick
 │ .kickall
 │ .left
-│ .promote
-│ .demote
-│ .admins
 │ .members
 │ .online
-│ .hidetag
+│ .promote
 │ .tag
 │ .tagall
 │ .welcome
-│ .goodbye
 ╰───────────────
 
 ╭─🧊 UTILITAIRES
+│ .save
+│ .shorturl
 │ .sticker
 │ .toimg
-│ .vv
-│ .take
-│ .shorturl
-│ .url
 │ .translate
 │ .tts
-│ .save
+│ .url
+│ .vv
+│ .take
 ╰───────────────
 
 ╭─☠️ FUN / DARK
-│ .darkquote
-│ .painfact
 │ .curse
-│ .insult
+│ .darkquote
+│ .deathclock
+│ .painfact
 │ .shadow
 │ .summon
-│ .deathclock
+│ .insult
 ╰───────────────
 
 > POWER BY 🩸𝐓𝐇𝐄 𝐏𝐀𝐈𝐍🩸
@@ -103,7 +107,15 @@ export default {
       {
         image: { url: BOT_IMAGE },
         caption: menu,
-        mentions: [m.sender]
+        contextInfo: {
+          isForwarded: true,
+          forwardingScore: 999,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: '120363422649925479@newsletter',
+            newsletterName: '⏤͟͟͞𝐓𝐇𝐄 亗 𝐏𝐀𝐈𝐍 亗 𝐓𝐄𝐂𝐇᭄',
+            serverMessageId: 1
+          }
+        }
       },
       { quoted: m }
     );
