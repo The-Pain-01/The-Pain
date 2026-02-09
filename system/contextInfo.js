@@ -1,18 +1,11 @@
-// system/contextinfo.js
-export const CHANNEL_JID = '120363422649925479@newsletter';
+// ==================== contextinfo.js ====================
 
-/**
- * ContextInfo pour simuler un message transféré depuis une chaîne WhatsApp
- * (newsletter / channel)
- */
-export function channelContextInfo() {
-  return {
-    isForwarded: true,
-    forwardingScore: 999, // force l'affichage "Forwarded"
-    forwardedNewsletterMessageInfo: {
-      newsletterJid: CHANNEL_JID,
-      newsletterName: '𝐓𝐇𝐄 𝐏𝐀𝐈𝐍-MD',
-      serverMessageId: -1
-    }
-  };
-}
+export const channelContextInfo = {
+  forwardingScore: 999,
+  isForwarded: true,
+
+  newsletterJid: '120363422649925479@newsletter',
+  newsletterName: '⏤͟͟͞𝐓𝐇𝐄 亗 𝐏𝐀𝐈𝐍 亗 𝐓𝐄𝐂𝐇᭄',
+
+  serverMessageId: 1
+};
