@@ -1,9 +1,8 @@
-// ==================== handler.js (PRO FINAL) ====================
+// ==================== handler.js (PRO FINAL LIBRE) ====================
 import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
 import config from './config.js';
-import { WARN_MESSAGES } from './system/warnMessages.js';
 
 // ================== 📂 SETTINGS ==================
 const SETTINGS_FILE = './data/settings.json';
@@ -68,7 +67,8 @@ const smsg = (sock, m) => {
       ? sock.user.id
       : m.key.participant || m.key.remoteJid,
     isGroup: m.key.remoteJid.endsWith('@g.us'),
-    mentionedJid: msg.extendedTextMessage?.contextInfo?.mentionedJid || []
+    mentionedJid:
+      msg.extendedTextMessage?.contextInfo?.mentionedJid || []
   };
 };
 
@@ -84,21 +84,8 @@ async function handleBotModes(sock, m) {
 
 async function handleAutoread(sock, m) {
   try {
-    if (m?.key?.id)
-      await sock.readMessages([m.key]);
+    if (m?.key?.id) await sock.readMessages([m.key]);
   } catch {}
-}
-
-// ================== 👑 ADMIN CHECK ==================
-async function checkAdmin(sock, chat, user) {
-  try {
-    const meta = await sock.groupMetadata(chat);
-    return meta.participants.some(
-      p => p.id === user && p.admin
-    );
-  } catch {
-    return false;
-  }
 }
 
 // ================== 📦 LOAD COMMANDS ==================
@@ -107,13 +94,14 @@ const loadCommands = async (dir = './commands') => {
   if (loaded) return;
   for (const file of fs.readdirSync(dir)) {
     const full = path.join(dir, file);
-    if (fs.statSync(full).isDirectory())
+    if (fs.statSync(full).isDirectory()) {
       await loadCommands(full);
-    else if (file.endsWith('.js')) {
+    } else if (file.endsWith('.js')) {
       const mod = await import(pathToFileURL(full).href);
       const cmd = mod.default || mod;
-      if (cmd?.name)
+      if (cmd?.name) {
         commands[cmd.name.toLowerCase()] = cmd;
+      }
     }
   }
   loaded = true;
@@ -136,75 +124,41 @@ async function handleCommand(sock, mRaw) {
     const cmd = commands[commandName];
     if (!cmd) return;
 
-    const senderNum = m.sender.split('@')[0];
-    const isOwner = global.owner.includes(senderNum);
-    const isAdmin = m.isGroup
-      ? await checkAdmin(sock, m.chat, m.sender)
-      : false;
+    const isOwner = global.owner.includes(
+      m.sender.split('@')[0]
+    );
 
-    // ===== BOT MODES =====
+    // ===== BOT PRESENCE =====
     await handleBotModes(sock, m);
     if (global.botModes.autoread?.enabled)
       await handleAutoread(sock, m);
 
     // ===== MODE SYSTEM =====
     if (global.mode === 'self' && !isOwner) return;
-
-    if (global.mode === 'private') {
-      const allowed = [
-        ...global.owner,
-        sock.user.id.split('@')[0]
-      ];
-      if (!allowed.includes(senderNum))
-        return sock.sendMessage(
-          m.chat,
-          { text: WARN_MESSAGES.PRIVATE_MODE },
-          { quoted: mRaw }
-        );
-    }
+    if (global.mode === 'private' && !isOwner) return;
 
     // ===== BLOCK INBOX =====
-    if (global.blockInbox && !m.isGroup && !isOwner)
-      return sock.sendMessage(
-        m.chat,
-        { text: WARN_MESSAGES.BLOCK_INBOX },
-        { quoted: mRaw }
-      );
+    if (global.blockInbox && !m.isGroup && !isOwner) return;
 
-    // ===== BANNED =====
-    if (global.bannedUsers.has(m.sender))
-      return sock.sendMessage(
-        m.chat,
-        { text: WARN_MESSAGES.BANNED_USER },
-        { quoted: mRaw }
-      );
+    // ===== BANNED USERS =====
+    if (global.bannedUsers.has(m.sender)) return;
 
     // ===== GROUP OFF =====
-    if (m.isGroup && global.disabledGroups.has(m.chat) && !isOwner)
-      return sock.sendMessage(
-        m.chat,
-        { text: WARN_MESSAGES.BOT_OFF },
-        { quoted: mRaw }
-      );
+    if (
+      m.isGroup &&
+      global.disabledGroups.has(m.chat) &&
+      !isOwner
+    )
+      return;
 
-    // ===== PERMISSIONS =====
-    if (cmd.ownerOnly && !isOwner)
-      return sock.sendMessage(
-        m.chat,
-        { text: WARN_MESSAGES.OWNER_ONLY(commandName) },
-        { quoted: mRaw }
-      );
-
-    if (cmd.admin && !isAdmin && !isOwner)
-      return sock.sendMessage(
-        m.chat,
-        { text: WARN_MESSAGES.ADMIN_ONLY(commandName) },
-        { quoted: mRaw }
-      );
+    // ===== OPTIONAL OWNER ONLY =====
+    if (cmd.ownerOnly && !isOwner) return;
 
     // ===== EXECUTE =====
-    await cmd.execute?.(sock, m, args);
-    await cmd.run?.(sock, m, args);
+    if (typeof cmd.execute === 'function')
+      await cmd.execute(sock, m, args);
+    else if (typeof cmd.run === 'function')
+      await cmd.run(sock, m, args);
 
     saveSettings();
   } catch (err) {
@@ -212,11 +166,12 @@ async function handleCommand(sock, mRaw) {
   }
 }
 
-// ================== 👥 PARTICIPANT ==================
+// ================== 👥 PARTICIPANT UPDATE ==================
 async function handleParticipantUpdate(sock, update) {
   for (const cmd of Object.values(commands)) {
-    if (typeof cmd.participantUpdate === 'function')
+    if (typeof cmd.participantUpdate === 'function') {
       await cmd.participantUpdate(sock, update).catch(() => {});
+    }
   }
 }
 
