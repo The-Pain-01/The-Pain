@@ -1,42 +1,27 @@
-// ==================== commands/vv.js ====================
+import { getQuotedMedia } from '../system/getQuotedMedia.js';
+
 export default {
   name: 'vv',
-  description: 'Récupère une image/vidéo view-once dans le chat',
-  category: 'utilitaires',
+  description: 'Récupère un média en vue unique',
+  category: 'dark',
 
   async execute(sock, m) {
-    try {
-      const msg = m.message;
-      if (!msg) return;
+    const media = getQuotedMedia(m);
 
-      const viewOnceMsg = msg.viewOnceMessage;
-      if (!viewOnceMsg) {
-        return await sock.sendMessage(
-          m.chat,
-          { text: '💀 Aucun media view-once trouvé dans ce message.' },
-          { quoted: m }
-        );
-      }
-
-      const media = viewOnceMsg.message.imageMessage || viewOnceMsg.message.videoMessage;
-      if (!media) return;
-
-      await sock.sendMessage(
+    if (!media) {
+      return sock.sendMessage(
         m.chat,
-        {
-          image: media.imageData ? { buffer: media.imageData } : undefined,
-          video: media.videoData ? { buffer: media.videoData } : undefined,
-          caption: '☠️ DARK VIEW-ONCE ☠️',
-        },
-        { quoted: m }
-      );
-    } catch (err) {
-      console.error('VV command error:', err);
-      await sock.sendMessage(
-        m.chat,
-        { text: '☠️ Impossible de récupérer le media view-once.' },
+        { text: '☠️ Aucun média view-once détecté.\n➡️ Réponds au message.' },
         { quoted: m }
       );
     }
-  },
+
+    await sock.sendMessage(
+      m.chat,
+      media.imageMessage
+        ? { image: media, caption: '🩸 VIEW ONCE DÉVOILÉ 🩸' }
+        : { video: media, caption: '🩸 VIEW ONCE DÉVOILÉ 🩸' },
+      { quoted: m }
+    );
+  }
 };
