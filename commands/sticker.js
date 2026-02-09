@@ -1,77 +1,58 @@
-// ==================== commands/sticker.js ====================
-import { writeFileSync, unlinkSync } from 'fs';
-import path from 'path';
-import { tmpdir } from 'os';
-import { exec } from 'child_process';
+import { getQuotedMedia } from '../system/getQuotedMedia.js';
 
 export default {
   name: 'sticker',
-  aliases: ['stiker', 's'],
-  description: 'Crée un sticker à partir d\'une image ou vidéo',
+  aliases: ['s'],
+  description: 'Crée un sticker à partir d’une image ou vidéo normale',
   category: 'utilitaires',
 
   async execute(sock, m) {
-    try {
-      const msg = m.message;
+    const media = getQuotedMedia(m);
 
-      // Vérifie si c'est une image ou vidéo
-      const imageMsg = msg.imageMessage || msg.documentMessage?.mimetype?.startsWith('image/');
-      const videoMsg = msg.videoMessage;
-
-      if (!imageMsg && !videoMsg) {
-        return await sock.sendMessage(
-          m.chat,
-          { text: '💀 Veuillez envoyer une image ou une vidéo pour créer un sticker !' },
-          { quoted: m }
-        );
-      }
-
-      // Génère un fichier temporaire
-      const tmpFile = path.join(tmpdir(), `sticker_${Date.now()}`);
-      let ext = '';
-
-      if (imageMsg) {
-        const buffer = msg.imageMessage?.imageData || msg.documentMessage?.fileEncSha256;
-        if (!buffer) return;
-        ext = '.png';
-        writeFileSync(tmpFile + ext, buffer);
-      } else if (videoMsg) {
-        const buffer = msg.videoMessage.videoData;
-        if (!buffer) return;
-        ext = '.mp4';
-        writeFileSync(tmpFile + ext, buffer);
-      }
-
-      // Génère le sticker avec ffmpeg (nécessite ffmpeg installé)
-      const output = tmpFile + '.webp';
-      const ffmpegCmd =
-        imageMsg
-          ? `ffmpeg -y -i "${tmpFile + ext}" -vcodec libwebp -filter:v "scale=512:512:force_original_aspect_ratio=decrease" -lossless 1 -qscale 75 -preset default -an -vsync 0 "${output}"`
-          : `ffmpeg -y -i "${tmpFile + ext}" -vcodec libwebp -filter:v "scale=512:512:force_original_aspect_ratio=decrease,fps=15" -lossless 0 -qscale 75 -preset default -an -vsync 0 "${output}"`;
-
-      exec(ffmpegCmd, async (err) => {
-        if (err) {
-          console.error('Sticker command ffmpeg error:', err);
-          return await sock.sendMessage(m.chat, { text: '☠️ Impossible de créer le sticker.' }, { quoted: m });
-        }
-
-        await sock.sendMessage(
-          m.chat,
-          { sticker: { url: output }, caption: '☠️ DARK STICKER ☠️' },
-          { quoted: m }
-        );
-
-        // Supprime les fichiers temporaires
-        try { unlinkSync(tmpFile + ext); unlinkSync(output); } catch {}
-      });
-
-    } catch (err) {
-      console.error('Sticker command error:', err);
-      await sock.sendMessage(
+    // ❌ Rien cité
+    if (!media) {
+      return sock.sendMessage(
         m.chat,
-        { text: '☠️ Une erreur est survenue lors de la création du sticker.' },
+        { text: '☠️ Réponds à une IMAGE ou VIDÉO.' },
         { quoted: m }
       );
     }
-  },
+
+    // ❌ Refuse view-once
+    if (media.fromViewOnce) {
+      return sock.sendMessage(
+        m.chat,
+        { text: '🛑 Les médias view-once sont interdits pour .sticker.' },
+        { quoted: m }
+      );
+    }
+
+    // ❌ Refuse sticker
+    if (media.type === 'sticker') {
+      return sock.sendMessage(
+        m.chat,
+        { text: '☠️ Ce média est déjà un sticker.\nUtilise .take.' },
+        { quoted: m }
+      );
+    }
+
+    // ✅ Autorisé : image / vidéo normale
+    if (media.type !== 'image' && media.type !== 'video') {
+      return sock.sendMessage(
+        m.chat,
+        { text: '☠️ Média non supporté.' },
+        { quoted: m }
+      );
+    }
+
+    await sock.sendMessage(
+      m.chat,
+      {
+        sticker: media.data,
+        packname: '𝐓𝐇𝐄_𝐏𝐀𝐈𝐍-MD',
+        author: m.pushName || 'Dark User'
+      },
+      { quoted: m }
+    );
+  }
 };
