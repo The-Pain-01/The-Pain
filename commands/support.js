@@ -1,16 +1,27 @@
 export default {
   name: 'support',
   async execute(sock, m) {
-    const text = `
-☠️ 𝐓𝐇𝐄_𝐏𝐀𝐈𝐍-MD — SUPPORT ☠️
+    const BOT_NAME = global.BOT_NAME || '𝐓𝐇𝐄 𝐏𝐀𝐈𝐍-MD';
 
-📢 Chaîne officielle :
+    const text = `
+⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+☠️ ${BOT_NAME} SUPPORT ☠️
+⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+
+📢 𝐂𝐡𝐚𝐧𝐧𝐞𝐥 𝐎𝐟𝐟𝐢𝐜𝐢𝐞𝐥 :
 https://whatsapp.com/channel/0029Vb7FTvDICVfgeK27ul2S
 
-👑 Contact du Maître :
+👑 𝐂𝐨𝐧𝐭𝐚𝐜𝐭 𝐝𝐮 𝐌𝐚𝐢̂𝐭𝐫𝐞 :
 +27727500078
 
-🩸 Ne dérange pas le maître inutilement.
+🩸 Le Maître n’est pas invoqué pour des futilités.
+⚠️ Réfléchis avant d’écrire… chaque message est vu.
+☠️ Le silence est préférable si ta requête est inutile.
+
+🛠️ Pour toute assistance officielle,
+rejoins d’abord la Channel.
+
+⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 `;
 
     await sock.sendMessage(
