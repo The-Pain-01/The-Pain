@@ -1,21 +1,33 @@
 export default {
   name: 'tagall',
-  description: 'Mentionne tous les membres du groupe',
-  category: 'group',
-  admin: true,
   async execute(sock, m) {
-    if (!m.isGroup) return sock.sendMessage(m.chat, { text: '☠️ Cette commande fonctionne uniquement en groupe.' }, { quoted: m });
+    const metadata = await sock.groupMetadata(m.chat);
+    const members = metadata.participants;
 
-    const meta = await sock.groupMetadata(m.chat);
-    const members = meta.participants.map(p => p.id);
+    const emojis = ['☠️','🩸','👁️','🔥','⚔️','🕷️','🕸️','💀','👑','🩶'];
 
-    const text = '☠️ ATTENTION ! Tous les membres sont pris dans les ténèbres :\n' +
-      members.map((id) => `🕷️ @${id.split('@')[0]}`).join('\n');
+    let text = `
+╔═══〔 ${metadata.subject} 〕═══╗
+Membres : ${members.length}
 
-    await sock.sendMessage(
-      m.chat,
-      { text, contextInfo: { mentionedJid: members } },
-      { quoted: m }
-    );
-  },
+⚠️ VOUS ÊTES CONVOQUÉS.
+Le silence n’est pas une option.
+Répondez à l’appel… ou subissez les conséquences.
+╚══════════════════╝
+
+`;
+
+    let mentions = [];
+
+    members.forEach(member => {
+      const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+      text += `${randomEmoji} @${member.id.split('@')[0]}\n`;
+      mentions.push(member.id);
+    });
+
+    await sock.sendMessage(m.chat, {
+      text,
+      mentions
+    });
+  }
 };
