@@ -1,15 +1,7 @@
-export default {
-  name: 'toimg',
-  description: 'Convertit un sticker en image',
-  category: 'utilitaires',
-  async execute(sock, m) {
-    if (!m.message.stickerMessage) return sock.sendMessage(m.chat, { text: '💀 Envoie un sticker pour le convertir.' }, { quoted: m });
+if (!m.quoted || m.quoted.mtype !== 'stickerMessage')
+  return m.reply('Réponds à un sticker.');
 
-    // Ici tu convertis selon ta lib sticker -> image
-    await sock.sendMessage(
-      m.chat,
-      { text: '☠️ Sticker converti en image (fonctionnalité à implémenter selon ta lib).' },
-      { quoted: m }
-    );
-  },
-};
+const buffer = await m.quoted.download();
+await sock.sendMessage(m.chat, {
+  image: buffer
+});
