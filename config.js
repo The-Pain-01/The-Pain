@@ -9,29 +9,25 @@ const __dirname = path.dirname(__filename);
 
 // ================== CONFIGURATION PAR DÉFAUT ==================
 const defaultConfig = {
-  // 🔑 Identifiants
   SESSION_ID: "",
-  OWNERS: ["27727500078"], // numéros sans +
+  OWNERS: ["27727500078"], // 🔥 Le déployeur met son numéro ici (sans +)
   PREFIX: ".",
   TIMEZONE: "Africa/Kinshasa",
   VERSION: "2.0.0",
 
-  // 🤖 Paramètres du bot
-  MODE: "public", // public | private | self
-  autoRead: true,
+  MODE: "public",
+  autoRead: false,
   restrict: false,
-  botImage: "",
   blockInbox: false,
 
-  // 🌐 Liens utiles
   LINKS: {
-    group: "https://chat.whatsapp.com/EVqFbDrtwqEAxjF2FQ9pWl",
-    channel: "https://whatsapp.com/channel/0029Vb7FTvDICVfgeK27ul2S",
-    telegram: "https://t.me/zonetech2"
+    group: "",
+    channel: "",
+    telegram: ""
   }
 };
 
-// ================== CHEMINS DES DONNÉES ==================
+// ================== DOSSIER DATA ==================
 const dataDir = path.join(__dirname, "data");
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
@@ -43,39 +39,27 @@ if (!fs.existsSync(configPath)) {
   console.log("✅ config.json créé");
 }
 
-// ================== CHARGEMENT ==================
 let userConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 
-// ================== VARIABLES GLOBALES ==================
-global.blockInbox = userConfig.blockInbox ?? false;
-
-// Owners
-global.owner = Array.isArray(userConfig.OWNERS)
-  ? userConfig.OWNERS
-  : [];
-
-// Mode du bot
+// ================== GLOBALS ==================
+global.owner = userConfig.OWNERS || [];
 global.mode = userConfig.MODE || "public";
+global.blockInbox = userConfig.blockInbox || false;
+global.autoRead = userConfig.autoRead || false;
 
-// ================== SAUVEGARDE ==================
-export function saveConfig(updatedConfig = {}) {
-  userConfig = { ...userConfig, ...updatedConfig };
+// ================== SAVE ==================
+export function saveConfig(update = {}) {
+  userConfig = { ...userConfig, ...update };
   fs.writeFileSync(configPath, JSON.stringify(userConfig, null, 2));
 
-  if (typeof updatedConfig.blockInbox !== "undefined") {
-    global.blockInbox = updatedConfig.blockInbox;
-  }
+  if (update.MODE) global.mode = update.MODE;
+  if (update.OWNERS) global.owner = update.OWNERS;
+  if (typeof update.blockInbox !== "undefined")
+    global.blockInbox = update.blockInbox;
+  if (typeof update.autoRead !== "undefined")
+    global.autoRead = update.autoRead;
 
-  if (typeof updatedConfig.MODE !== "undefined") {
-    global.mode = updatedConfig.MODE;
-  }
-
-  if (Array.isArray(updatedConfig.OWNERS)) {
-    global.owner = updatedConfig.OWNERS;
-  }
-
-  console.log("✅ Configuration sauvegardée");
+  console.log("✅ Configuration mise à jour");
 }
 
-// ================== EXPORT ==================
 export default userConfig;
