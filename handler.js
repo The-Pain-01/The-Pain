@@ -7,10 +7,22 @@ import config from "./config.js";
 const commands = {};
 const SETTINGS_FILE = "./data/settings.json";
 
+// ================= LOAD SETTINGS =================
 let saved = {};
+
+if (!fs.existsSync("./data")) {
+  fs.mkdirSync("./data");
+}
+
+if (!fs.existsSync(SETTINGS_FILE)) {
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify({}, null, 2));
+}
+
 try {
   saved = JSON.parse(fs.readFileSync(SETTINGS_FILE));
-} catch {}
+} catch {
+  saved = {};
+}
 
 global.disabledGroups = new Set(saved.disabledGroups || []);
 global.bannedUsers = new Set(saved.bannedUsers || []);
@@ -37,18 +49,26 @@ function saveSettings() {
   );
 }
 
+// ================= MESSAGE FORMAT =================
 const smsg = (sock, m) => {
   if (!m?.message) return {};
+
   const msg = m.message;
+
+  const body =
+    msg.conversation ||
+    msg.extendedTextMessage?.text ||
+    msg.imageMessage?.caption ||
+    msg.videoMessage?.caption ||
+    "";
+
+  const quoted =
+    msg?.extendedTextMessage?.contextInfo?.quotedMessage || null;
 
   return {
     ...m,
-    body:
-      msg.conversation ||
-      msg.extendedTextMessage?.text ||
-      msg.imageMessage?.caption ||
-      msg.videoMessage?.caption ||
-      "",
+    body,
+    quoted,
     chat: m.key.remoteJid,
     sender: m.key.fromMe
       ? sock.user.id
@@ -57,19 +77,25 @@ const smsg = (sock, m) => {
   };
 };
 
+// ================= LOAD COMMANDS =================
 async function loadCommands(dir = "./commands") {
   for (const file of fs.readdirSync(dir)) {
     const full = path.join(dir, file);
+
     if (fs.statSync(full).isDirectory()) {
       await loadCommands(full);
     } else if (file.endsWith(".js")) {
       const mod = await import(pathToFileURL(full).href);
       const cmd = mod.default || mod;
-      if (cmd?.name) commands[cmd.name.toLowerCase()] = cmd;
+
+      if (cmd?.name) {
+        commands[cmd.name.toLowerCase()] = cmd;
+      }
     }
   }
 }
 
+// ================= HANDLE COMMAND =================
 async function handleCommand(sock, mRaw) {
   if (!mRaw?.message) return;
 
@@ -77,19 +103,20 @@ async function handleCommand(sock, mRaw) {
   const body = m.body?.trim();
   if (!body) return;
 
+  if (!body.startsWith(config.PREFIX)) return;
+
   if (global.autoRead) {
     try { await sock.readMessages([m.key]); } catch {}
   }
 
-  if (!body.startsWith(config.PREFIX)) return;
-
   const args = body.slice(config.PREFIX.length).trim().split(/\s+/);
   const commandName = args.shift()?.toLowerCase();
+
   const cmd = commands[commandName];
   if (!cmd) return;
 
   const senderNumber = m.sender.split("@")[0];
-  const isOwner = global.owner.includes(senderNumber);
+  const isOwner = global.owner?.includes(senderNumber);
 
   // 🔒 MODE SYSTEM
   if (global.mode === "private" && !isOwner) return;
@@ -107,16 +134,27 @@ async function handleCommand(sock, mRaw) {
         [m.sender],
         "remove"
       );
+      return;
     }
   }
 
   if (cmd.ownerOnly && !isOwner) return;
 
-  if (cmd.execute) await cmd.execute(sock, m, args);
+  try {
+    if (cmd.execute) {
+      await cmd.execute(sock, m, args);
+    }
+  } catch (err) {
+    console.error("❌ Command Error:", err);
+    await sock.sendMessage(m.chat, {
+      text: "❌ Une erreur est survenue."
+    });
+  }
 
   saveSettings();
 }
 
+// ================= GROUP UPDATE =================
 async function handleParticipantUpdate(sock, update) {
   const { id, participants, action } = update;
 
