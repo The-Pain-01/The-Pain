@@ -1,47 +1,68 @@
+import axios from "axios";
+import FormData from "form-data";
+
 export default {
-  name: 'url',
+  name: "url",
+
   async execute(sock, m) {
+    const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+
+    if (!quoted) {
+      return sock.sendMessage(m.chat, {
+        text: "☠️ Réponds à une image, vidéo ou audio."
+      });
+    }
+
+    const type = Object.keys(quoted)[0];
+
+    if (!["imageMessage", "videoMessage", "audioMessage"].includes(type)) {
+      return sock.sendMessage(m.chat, {
+        text: "👁️ Seuls image, vidéo ou audio sont acceptés."
+      });
+    }
+
     try {
-      // Vérifie s’il y a un message cité
-      const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-      if (!quoted)
-        return sock.sendMessage(
-          m.chat,
-          { text: '☠️ Réponds à une image, vidéo ou audio pour extraire son URL.' },
-          { quoted: m }
-        );
+      // Télécharger média
+      const buffer = await sock.downloadMediaMessage({
+        message: quoted
+      });
 
-      // Récupération du type de média
-      const type = Object.keys(quoted)[0];
-      const media = quoted[type];
+      // Déterminer extension
+      let ext = "bin";
+      if (type === "imageMessage") ext = "jpg";
+      if (type === "videoMessage") ext = "mp4";
+      if (type === "audioMessage") ext = "mp3";
 
-      if (!media?.url)
-        return sock.sendMessage(
-          m.chat,
-          { text: '🩸 Aucun lien détecté dans ce message.' },
-          { quoted: m }
-        );
+      const form = new FormData();
+      form.append("reqtype", "fileupload");
+      form.append("fileToUpload", buffer, `file.${ext}`);
 
-      const text = `
-╔══════════════════════╗
-        ☠️ URL ☠️
-╚══════════════════════╝
+      const response = await axios.post(
+        "https://catbox.moe/user/api.php",
+        form,
+        { headers: form.getHeaders() }
+      );
 
-🔗 Lien du média :
-${media.url}
+      const url = response.data.trim(); // format https://files.catbox.moe/xxxxx.ext
 
-🩸 ${global.BOT_NAME || 'THE_PAIN-MD'}
-`;
+      await sock.sendMessage(m.chat, {
+        text: `
+╔═══〔 🌐 PORTAIL CATBOX 🌐 〕═══╗
 
-      await sock.sendMessage(m.chat, { text }, { quoted: m });
+🩸 Fichier libéré :
+
+${url}
+
+☠️ Le lien est public. Utilise-le avec prudence.
+╚════════════════════╝
+`
+      });
 
     } catch (err) {
-      console.error('URL CMD ERROR:', err);
-      await sock.sendMessage(
-        m.chat,
-        { text: '💀 Une erreur obscure est survenue…' },
-        { quoted: m }
-      );
+      console.error(err);
+      await sock.sendMessage(m.chat, {
+        text: "💀 Échec lors de l’upload vers Catbox."
+      });
     }
   }
 };
