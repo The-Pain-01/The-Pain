@@ -1,21 +1,48 @@
 export default {
-  name: 'goodbye',
-  admin: true,
-  async execute(sock, m, args) {
-    global.goodbye ??= {};
-    global.goodbye[m.chat] = args[0] === 'on';
+  name: "goodbye",
 
-    await sock.sendMessage(m.chat, {
-      text: args[0] === 'on'
-        ? '😈 Les adieux humiliants sont activés.'
-        : '🧊 Le silence accompagne désormais les fuyards.'
-    }, { quoted: m });
+  async execute(sock, m) {
+    if (!m.isGroup) return;
+
+    if (global.goodbyeGroups.has(m.chat)) {
+      global.goodbyeGroups.delete(m.chat);
+      await sock.sendMessage(m.chat, {
+        text: "👁️ Les disparitions ne seront plus annoncées."
+      });
+    } else {
+      global.goodbyeGroups.add(m.chat);
+      await sock.sendMessage(m.chat, {
+        text: "💀 Chaque fuite sera publiquement humiliée."
+      });
+    }
   },
 
   async participantUpdate(sock, update) {
-    if (update.action === 'remove' && global.goodbye?.[update.id]) {
-      await sock.sendMessage(update.id, {
-        text: `😂 Encore un faible effacé de la mémoire du groupe.`
+    const { id, participants, action } = update;
+    if (!global.goodbyeGroups.has(id)) return;
+    if (action !== "remove") return;
+
+    const metadata = await sock.groupMetadata(id).catch(() => null);
+    const groupName = metadata?.subject || "Royaume Obscur";
+
+    for (let user of participants) {
+      await sock.sendMessage(id, {
+        text: `
+╔═══〔 ☠️ ÂME REJETÉE ☠️ 〕═══╗
+👁️ Groupe : *${groupName}*
+
+💀 @${user.split("@")[0]} a quitté le royaume…
+
+🩸 Courage : inexistant.
+📉 Niveau : catastrophique.
+👟 Fuite détectée.
+
+😂 Même les fantômes n’ont pas remarqué son absence.
+
+Que les portes se referment derrière lui.
+╚════════════════════╝
+`,
+        mentions: [user]
       });
     }
   }
