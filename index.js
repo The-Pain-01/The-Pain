@@ -9,17 +9,13 @@ import { fileURLToPath } from 'url';
 // ================== CONFIG & GLOBALS ==================
 import config from './config.js';
 
-
 // ================== ASSETS & UTILS ==================
 import { connectionMessage, getBotImage } from './system/botAssets.js';
-
 import { loadSessionFromMega } from './system/megaSession.js';
 
 // ================== HANDLER ==================
 import handleCommand, {
-  smsg,
   loadCommands,
-  commands,
   handleParticipantUpdate
 } from './handler.js';
 
@@ -66,7 +62,6 @@ if (!fs.existsSync(sessionDir)) {
 // ================== START BOT ==================
 async function startBot() {
   try {
-    // ===== Load session Mega (si existante)
     await loadSessionFromMega(credsPath);
 
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
@@ -90,14 +85,14 @@ async function startBot() {
       return jid;
     };
 
-    // ================== LOAD COMMANDS (ONCE) ==================
+    // ================== LOAD COMMANDS ==================
     await loadCommands();
-    console.log(chalk.cyan(`📂 Commandes chargées : ${Object.keys(commands).length}`));
+    console.log(chalk.cyan(`📂 Commandes chargées avec succès`));
 
     // ================== CONNECTION ==================
     sock.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
       if (connection === 'open') {
-        console.log(chalk.green('✅ THE_PAIN-MD CONNECTÉ'));
+        console.log(chalk.green('✅ BOT CONNECTÉ'));
 
         try {
           const jid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
@@ -107,7 +102,6 @@ async function startBot() {
           });
         } catch {}
 
-        await checkUpdate(sock);
       }
 
       if (connection === 'close') {
@@ -126,12 +120,10 @@ async function startBot() {
     sock.ev.on('messages.upsert', async ({ messages }) => {
       if (!messages?.length) return;
 
-      const valid = messages.filter(m => m?.message);
+      for (const msg of messages) {
+        if (!msg?.message) continue;
 
-      for (const msg of valid) {
         try {
-          const m = smsg(sock, msg);
-          if (!m.body?.trim()) continue;
           await handleCommand(sock, msg);
         } catch (err) {
           console.error('❌ Message handler error:', err);
@@ -140,9 +132,11 @@ async function startBot() {
     });
 
     // ================== GROUP EVENTS ==================
-    sock.ev.on('group-participants.update', update =>
-      handleParticipantUpdate(sock, update).catch(() => {})
-    );
+    sock.ev.on('group-participants.update', async update => {
+      try {
+        await handleParticipantUpdate(sock, update);
+      } catch {}
+    });
 
     // ================== CREDS ==================
     sock.ev.on('creds.update', saveCreds);
