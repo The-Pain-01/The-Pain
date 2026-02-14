@@ -1,10 +1,8 @@
 export default {
-  name: 'mute',
-  admin: true,
+  name: "mute",
   async execute(sock, m) {
-    await sock.groupSettingUpdate(m.chat, 'announcement');
-    await sock.sendMessage(m.chat, {
-      text: '🔇 Les voix sont étouffées.'
-    }, { quoted: m });
+    if (!m.isGroup) return;
+    global.mutedGroups.add(m.chat);
+    await sock.sendMessage(m.chat, { text: "🔇 Groupe muté." });
   }
 };
