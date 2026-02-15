@@ -62,6 +62,8 @@ if (!fs.existsSync(sessionDir)) {
 // ================== START BOT ==================
 async function startBot() {
   try {
+    console.log(chalk.yellow("🚀 Démarrage du bot..."));
+
     await loadSessionFromMega(credsPath);
 
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
@@ -75,7 +77,6 @@ async function startBot() {
       printQRInTerminal: false
     });
 
-    // ================== JID NORMALIZER ==================
     sock.decodeJid = jid => {
       if (!jid) return jid;
       if (/:\d+@/gi.test(jid)) {
@@ -85,9 +86,17 @@ async function startBot() {
       return jid;
     };
 
-    // ================== LOAD COMMANDS ==================
-    await loadCommands();
-    console.log(chalk.cyan(`📂 Commandes chargées avec succès`));
+    // ================== LOAD COMMANDS (DEBUG) ==================
+    console.log(chalk.cyan("📂 Chargement des commandes..."));
+
+    try {
+      await loadCommands();
+      console.log(chalk.green("✅ Toutes les commandes ont été chargées"));
+    } catch (err) {
+      console.error(chalk.red("💥 ERREUR LORS DU CHARGEMENT DES COMMANDES"));
+      console.error(err.stack); // affiche fichier + ligne exacte
+      process.exit(1);
+    }
 
     // ================== CONNECTION ==================
     sock.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
@@ -100,8 +109,9 @@ async function startBot() {
             image: { url: getBotImage() },
             caption: connectionMessage()
           });
-        } catch {}
-
+        } catch (err) {
+          console.error("Erreur message connexion:", err);
+        }
       }
 
       if (connection === 'close') {
@@ -126,7 +136,8 @@ async function startBot() {
         try {
           await handleCommand(sock, msg);
         } catch (err) {
-          console.error('❌ Message handler error:', err);
+          console.error("❌ Message handler error:");
+          console.error(err.stack);
         }
       }
     });
@@ -135,16 +146,19 @@ async function startBot() {
     sock.ev.on('group-participants.update', async update => {
       try {
         await handleParticipantUpdate(sock, update);
-      } catch {}
+      } catch (err) {
+        console.error("❌ Group update error:");
+        console.error(err.stack);
+      }
     });
 
-    // ================== CREDS ==================
     sock.ev.on('creds.update', saveCreds);
 
     return sock;
 
   } catch (err) {
-    console.error('❌ ERREUR FATALE:', err);
+    console.error("💀 ERREUR FATALE AU DÉMARRAGE");
+    console.error(err.stack); // affiche la stack complète
     process.exit(1);
   }
 }
@@ -153,9 +167,12 @@ async function startBot() {
 startBot();
 
 // ================== GLOBAL ERRORS ==================
-process.on('unhandledRejection', err =>
-  console.error('UnhandledRejection:', err)
-);
-process.on('uncaughtException', err =>
-  console.error('UncaughtException:', err)
-);
+process.on('unhandledRejection', err => {
+  console.error("⚠️ UnhandledRejection:");
+  console.error(err.stack);
+});
+
+process.on('uncaughtException', err => {
+  console.error("⚠️ UncaughtException:");
+  console.error(err.stack);
+});
