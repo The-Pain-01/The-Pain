@@ -1,10 +1,10 @@
-// ================== CORE ==================
-import fs from 'fs';
-import path from 'path';
+// ================== MODULES ==================
+import fs from "fs";
+import path from "path";
+import { fileURLToPath, pathToFileURL } from "url";
 import chalk from 'chalk';
 import pino from 'pino';
 import crypto from 'crypto';
-import { fileURLToPath } from 'url';
 
 // ================== CONFIG & GLOBALS ==================
 import config from './config.js';
@@ -15,7 +15,6 @@ import { loadSessionFromMega } from './system/megaSession.js';
 
 // ================== HANDLER ==================
 import handleCommand, {
-  loadCommands,
   handleParticipantUpdate
 } from './handler.js';
 
@@ -59,6 +58,55 @@ if (!fs.existsSync(sessionDir)) {
   fs.mkdirSync(sessionDir, { recursive: true });
 }
 
+// ================== COMMANDS LOADER ==================
+const commands = new Map();
+
+async function loadCommands() {
+  console.log(chalk.cyan("📂 Chargement des commandes...\n"));
+
+  const commandsPath = path.join(__dirname, "commands");
+
+  if (!fs.existsSync(commandsPath)) {
+    console.error("❌ Le dossier 'commands' est introuvable !");
+    process.exit(1);
+  }
+
+  const commandFiles = fs
+    .readdirSync(commandsPath)
+    .filter(file => file.endsWith(".js"));
+
+  for (const file of commandFiles) {
+    const fullPath = path.join(commandsPath, file);
+
+    try {
+      console.log(`➡️ Tentative de chargement : ${file}`);
+
+      const commandModule = await import(pathToFileURL(fullPath));
+      const command = commandModule.default;
+
+      if (!command || !command.name || !command.execute) {
+        console.log(`⚠️ ${file} ignoré (format invalide)`);
+        continue;
+      }
+
+      if (commands.has(command.name)) {
+        console.log(`⚠️ Commande en double détectée : ${command.name}`);
+        continue;
+      }
+
+      commands.set(command.name, command);
+      console.log(`✅ Commande chargée : ${command.name}\n`);
+
+    } catch (err) {
+      console.error(`\n💥 ERREUR DANS LE FICHIER : ${file}`);
+      console.error(err);
+      process.exit(1);
+    }
+  }
+
+  console.log(chalk.green(`🎉 Toutes les commandes ont été chargées ! Total : ${commands.size}`));
+}
+
 // ================== START BOT ==================
 async function startBot() {
   try {
@@ -86,15 +134,12 @@ async function startBot() {
       return jid;
     };
 
-    // ================== LOAD COMMANDS (DEBUG) ==================
-    console.log(chalk.cyan("📂 Chargement des commandes..."));
-
+    // ================== LOAD COMMANDS ==================
     try {
       await loadCommands();
-      console.log(chalk.green("✅ Toutes les commandes ont été chargées"));
     } catch (err) {
       console.error(chalk.red("💥 ERREUR LORS DU CHARGEMENT DES COMMANDES"));
-      console.error(err.stack); // affiche fichier + ligne exacte
+      console.error(err.stack);
       process.exit(1);
     }
 
@@ -134,7 +179,7 @@ async function startBot() {
         if (!msg?.message) continue;
 
         try {
-          await handleCommand(sock, msg);
+          await handleCommand(sock, msg, commands);
         } catch (err) {
           console.error("❌ Message handler error:");
           console.error(err.stack);
@@ -158,7 +203,7 @@ async function startBot() {
 
   } catch (err) {
     console.error("💀 ERREUR FATALE AU DÉMARRAGE");
-    console.error(err.stack); // affiche la stack complète
+    console.error(err.stack);
     process.exit(1);
   }
 }
@@ -176,3 +221,6 @@ process.on('uncaughtException', err => {
   console.error("⚠️ UncaughtException:");
   console.error(err.stack);
 });
+
+// ================== EXPORT COMMANDS ==================
+export { commands };
