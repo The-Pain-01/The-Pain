@@ -54,6 +54,7 @@ const smsg = (sock, m) => {
   if (!m?.message) return {};
 
   const msg = m.message;
+  const mtype = Object.keys(msg)[0];
 
   const body =
     msg.conversation ||
@@ -62,18 +63,47 @@ const smsg = (sock, m) => {
     msg.videoMessage?.caption ||
     "";
 
-  const quoted =
-    msg?.extendedTextMessage?.contextInfo?.quotedMessage || null;
+  const contextInfo = msg?.extendedTextMessage?.contextInfo;
+  const quotedMessage = contextInfo?.quotedMessage;
+
+  let quoted = null;
+
+  if (quotedMessage) {
+    const quotedType = Object.keys(quotedMessage)[0];
+
+    quoted = {
+      mtype: quotedType,
+      msg: quotedMessage[quotedType],
+      key: {
+        remoteJid: m.key.remoteJid,
+        fromMe: false,
+        id: contextInfo.stanzaId,
+        participant: contextInfo.participant
+      }
+    };
+  }
+
+  const sender =
+    m.key.fromMe
+      ? sock.user.id
+      : m.key.participant || m.key.remoteJid;
+
+  const isGroup = m.key.remoteJid.endsWith("@g.us");
+
+  const reply = (text) =>
+    sock.sendMessage(m.key.remoteJid, { text }, { quoted: m });
 
   return {
     ...m,
+    mtype,
     body,
     quoted,
     chat: m.key.remoteJid,
-    sender: m.key.fromMe
-      ? sock.user.id
-      : m.key.participant || m.key.remoteJid,
-    isGroup: m.key.remoteJid.endsWith("@g.us")
+    sender,
+    isGroup,
+    reply,
+    isAdmin: false,
+    isBotAdmin: false
   };
 };
 
@@ -85,11 +115,18 @@ async function loadCommands(dir = "./commands") {
     if (fs.statSync(full).isDirectory()) {
       await loadCommands(full);
     } else if (file.endsWith(".js")) {
-      const mod = await import(pathToFileURL(full).href);
-      const cmd = mod.default || mod;
+      try {
+        const mod = await import(pathToFileURL(full).href);
+        const cmd = mod.default || mod;
 
-      if (cmd?.name) {
-        commands[cmd.name.toLowerCase()] = cmd;
+        if (cmd?.name) {
+          commands[cmd.name.toLowerCase()] = cmd;
+          console.log(`✅ Commande chargée : ${cmd.name}`);
+        }
+      } catch (err) {
+        console.error(`❌ Erreur dans ${file}`);
+        console.error(err);
+        process.exit(1);
       }
     }
   }
@@ -141,9 +178,7 @@ async function handleCommand(sock, mRaw) {
   if (cmd.ownerOnly && !isOwner) return;
 
   try {
-    if (cmd.execute) {
-      await cmd.execute(sock, m, args);
-    }
+    await cmd.execute(sock, m, args);
   } catch (err) {
     console.error("❌ Command Error:", err);
     await sock.sendMessage(m.chat, {
