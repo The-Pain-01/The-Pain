@@ -1,58 +1,43 @@
-import { exec } from 'child_process';
-import sharp from 'sharp';
-import { tmpdir } from 'os';
-import { join } from 'path';
-import fs from 'fs';
+// ==================== commands/toimg.js ====================
 
 export default {
-  name: 'toimg',
-  description: 'Convertit un sticker en image (.png) ou vidéo (.mp4) directement',
-  execute: async (sock, m) => {
-    if (!m.quoted || !m.quoted.mtype?.endsWith('Message')) {
-      return sock.sendMessage(m.chat, { text: '❌ Réponds à un sticker.' });
-    }
+  name: "toimg",
+  description: "Convertit un sticker en image ou vidéo",
 
-    const quoted = m.quoted;
-
-    if (!quoted.mtype.includes('sticker')) {
-      return sock.sendMessage(m.chat, { text: '❌ Ce n’est pas un sticker.' });
-    }
-
+  async execute(sock, m) {
     try {
-      const buffer = await quoted.download();
-      const isAnimated = quoted.message?.stickerMessage?.isAnimated;
+      const quoted = m.quoted;
 
-      if (!isAnimated) {
-        // Sticker image -> webp -> png en mémoire
-        const imageBuffer = await sharp(buffer).png().toBuffer();
-        await sock.sendMessage(m.chat, { image: imageBuffer });
+      if (!quoted || quoted.mtype !== "stickerMessage") {
+        return sock.sendMessage(m.chat, {
+          text: "❌ Réponds à un sticker pour le convertir."
+        }, { quoted: m });
+      }
+
+      const isAnimated = quoted.msg?.isAnimated;
+
+      const buffer = await sock.downloadMediaMessage(quoted);
+
+      if (isAnimated) {
+        // 🎞 Sticker animé → vidéo
+        await sock.sendMessage(m.chat, {
+          video: buffer,
+          caption: "🎞 Sticker animé converti en vidéo."
+        }, { quoted: m });
+
       } else {
-        // Sticker animé -> webm -> mp4 en mémoire via ffmpeg
-        // On utilise un fichier temporaire car ffmpeg lit/écrit depuis disque
-        const tmpInput = join(tmpdir(), `sticker_${Date.now()}.webm`);
-        const tmpOutput = join(tmpdir(), `sticker_${Date.now()}.mp4`);
-        fs.writeFileSync(tmpInput, buffer);
-
-        await new Promise((resolve, reject) => {
-          exec(
-            `ffmpeg -i "${tmpInput}" -movflags faststart -pix_fmt yuv420p "${tmpOutput}" -y`,
-            (err) => {
-              if (err) return reject(err);
-              resolve();
-            }
-          );
-        });
-
-        const videoBuffer = fs.readFileSync(tmpOutput);
-        await sock.sendMessage(m.chat, { video: videoBuffer });
-
-        fs.unlinkSync(tmpInput);
-        fs.unlinkSync(tmpOutput);
+        // 🖼 Sticker normal → image
+        await sock.sendMessage(m.chat, {
+          image: buffer,
+          caption: "🖼 Sticker converti en image."
+        }, { quoted: m });
       }
 
     } catch (err) {
-      console.error('❌ Erreur dans toimg.js :', err);
-      await sock.sendMessage(m.chat, { text: '❌ Impossible de convertir le sticker.' });
+      console.error("Erreur toimg:", err);
+      await sock.sendMessage(m.chat, {
+        text: "❌ Erreur lors de la conversion."
+      }, { quoted: m });
     }
   }
 };
