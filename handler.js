@@ -88,5 +88,13 @@ async function handleCommand(sock, mRaw) {
   saveSettings();
 }
 
-export { loadCommands };
+// ================= HANDLE GROUP UPDATE =================
+async function handleParticipantUpdate(sock, update) {
+  console.log("📢 Group Update détecté :", update.action);
+  // Si tu veux ajouter du welcome / goodbye plus tard,
+  // tu peux le faire ici.
+}
+
+// ================= EXPORTS =================
+export { loadCommands, handleParticipantUpdate };
 export default handleCommand;
