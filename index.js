@@ -10,7 +10,7 @@ import config from "./config.js";
 import { connectionMessage, getBotImage } from "./system/botAssets.js";
 import { loadSessionFromMega } from "./system/megaSession.js";
 
-// ✅ ON UTILISE LE LOADER DU HANDLER
+// ✅ IMPORT CORRECT DU HANDLER
 import handleCommand, {
   loadCommands,
   handleParticipantUpdate
@@ -33,7 +33,6 @@ if (!globalThis.crypto?.subtle) {
 
 global.owner ??= config.OWNERS || [];
 global.SESSION_ID ??= config.SESSION_ID;
-
 global.botStartTime = Date.now();
 
 const sessionDir = path.join(__dirname, "session");
@@ -69,10 +68,11 @@ async function startBot() {
       return jid;
     };
 
-    // ✅ CHARGEMENT DES COMMANDES DU HANDLER
+    // ✅ CHARGEMENT DES COMMANDES
     await loadCommands();
     console.log(chalk.green("✅ Commandes chargées avec succès"));
 
+    // ================= CONNECTION =================
     sock.ev.on("connection.update", async ({ connection, lastDisconnect }) => {
       if (connection === "open") {
         console.log(chalk.green("✅ BOT CONNECTÉ"));
@@ -80,7 +80,7 @@ async function startBot() {
 
       if (connection === "close") {
         const reason = lastDisconnect?.error?.output?.statusCode;
-        console.log(chalk.red("❌ Déconnecté :" ), reason);
+        console.log(chalk.red("❌ Déconnecté :"), reason);
 
         if (reason !== DisconnectReason.loggedOut) {
           setTimeout(startBot, 5000);
@@ -88,6 +88,7 @@ async function startBot() {
       }
     });
 
+    // ================= MESSAGE HANDLER =================
     sock.ev.on("messages.upsert", async ({ messages }) => {
       if (!messages?.length) return;
 
@@ -95,7 +96,6 @@ async function startBot() {
         if (!msg?.message) continue;
 
         try {
-          // ✅ ON NE PASSE PLUS commands
           await handleCommand(sock, msg);
         } catch (err) {
           console.error("❌ Message handler error:");
@@ -104,14 +104,17 @@ async function startBot() {
       }
     });
 
+    // ================= GROUP UPDATE =================
     sock.ev.on("group-participants.update", async update => {
       try {
         await handleParticipantUpdate(sock, update);
       } catch (err) {
+        console.error("❌ Group update error:");
         console.error(err);
       }
     });
 
+    // ================= SAVE CREDS =================
     sock.ev.on("creds.update", saveCreds);
 
   } catch (err) {
