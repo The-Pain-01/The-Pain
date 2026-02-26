@@ -7,10 +7,8 @@ import pino from "pino";
 import crypto from "crypto";
 
 import config from "./config.js";
-import { connectionMessage, getBotImage } from "./system/botAssets.js";
 import { loadSessionFromMega } from "./system/megaSession.js";
 
-// ✅ IMPORT CORRECT DU HANDLER
 import handleCommand, {
   loadCommands,
   handleParticipantUpdate
@@ -20,7 +18,6 @@ import makeWASocket, {
   Browsers,
   DisconnectReason,
   fetchLatestBaileysVersion,
-  jidDecode,
   useMultiFileAuthState
 } from "@whiskeysockets/baileys";
 
@@ -59,28 +56,18 @@ async function startBot() {
       printQRInTerminal: false
     });
 
-    sock.decodeJid = jid => {
-      if (!jid) return jid;
-      if (/:\d+@/gi.test(jid)) {
-        const d = jidDecode(jid) || {};
-        return d.user && d.server ? `${d.user}@${d.server}` : jid;
-      }
-      return jid;
-    };
-
-    // ✅ CHARGEMENT DES COMMANDES
+    // ================= LOAD COMMANDS =================
     await loadCommands();
-    console.log(chalk.green("✅ Commandes chargées avec succès"));
 
     // ================= CONNECTION =================
-    sock.ev.on("connection.update", async ({ connection, lastDisconnect }) => {
+    sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
       if (connection === "open") {
         console.log(chalk.green("✅ BOT CONNECTÉ"));
       }
 
       if (connection === "close") {
         const reason = lastDisconnect?.error?.output?.statusCode;
-        console.log(chalk.red("❌ Déconnecté :"), reason);
+        console.log(chalk.red("❌ Déconnecté:"), reason);
 
         if (reason !== DisconnectReason.loggedOut) {
           setTimeout(startBot, 5000);
@@ -98,8 +85,7 @@ async function startBot() {
         try {
           await handleCommand(sock, msg);
         } catch (err) {
-          console.error("❌ Message handler error:");
-          console.error(err);
+          console.error("❌ Message Handler Error:", err);
         }
       }
     });
@@ -109,8 +95,7 @@ async function startBot() {
       try {
         await handleParticipantUpdate(sock, update);
       } catch (err) {
-        console.error("❌ Group update error:");
-        console.error(err);
+        console.error("❌ Group Update Error:", err);
       }
     });
 
