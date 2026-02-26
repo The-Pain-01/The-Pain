@@ -7,6 +7,7 @@ import config from "./config.js";
 const commands = {};
 const SETTINGS_FILE = "./data/settings.json";
 
+// ================= INIT DOSSIERS =================
 if (!fs.existsSync("./data")) {
   fs.mkdirSync("./data");
 }
@@ -41,6 +42,8 @@ function saveSettings() {
 
 // ================= LOAD COMMANDS =================
 async function loadCommands(dir = "./commands") {
+  let count = 0;
+
   for (const file of fs.readdirSync(dir)) {
     const full = path.join(dir, file);
 
@@ -51,7 +54,7 @@ async function loadCommands(dir = "./commands") {
 
         if (cmd?.name) {
           commands[cmd.name.toLowerCase()] = cmd;
-          console.log(`✅ Commande chargée : ${cmd.name}`);
+          count++;
         }
       } catch (err) {
         console.error(`❌ Erreur dans ${file}`);
@@ -60,11 +63,18 @@ async function loadCommands(dir = "./commands") {
       }
     }
   }
+
+  console.log(`✅ ${count} commandes chargées avec succès`);
 }
 
 // ================= HANDLE COMMAND =================
 async function handleCommand(sock, mRaw) {
   if (!mRaw?.message) return;
+
+  const from = mRaw.key?.remoteJid;
+  if (!from) return;
+
+  const isGroup = from.endsWith("@g.us");
 
   const body =
     mRaw.message.conversation ||
@@ -79,8 +89,19 @@ async function handleCommand(sock, mRaw) {
   const cmd = commands[commandName];
   if (!cmd) return;
 
+  // Wrapper message propre
+  const m = {
+    ...mRaw,
+    chat: from,
+    sender: isGroup
+      ? mRaw.key.participant
+      : from,
+    isGroup,
+    reply: (text) => sock.sendMessage(from, { text })
+  };
+
   try {
-    await cmd.execute(sock, mRaw, args);
+    await cmd.execute(sock, m, args);
   } catch (err) {
     console.error("❌ Command Error:", err);
   }
@@ -90,9 +111,7 @@ async function handleCommand(sock, mRaw) {
 
 // ================= HANDLE GROUP UPDATE =================
 async function handleParticipantUpdate(sock, update) {
-  console.log("📢 Group Update détecté :", update.action);
-  // Si tu veux ajouter du welcome / goodbye plus tard,
-  // tu peux le faire ici.
+  console.log("📢 Group Update:", update.action);
 }
 
 // ================= EXPORTS =================
