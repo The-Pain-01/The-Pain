@@ -37,7 +37,7 @@ export function connectionMessage() {
 ├───────────────────────────┤
 │ “The circle is drawn.
 │ The name was spoken.
-│ Pain has answered.”
+│ The Pain has answered.”
 ╰───────────────────────────╯
 `;
 }
