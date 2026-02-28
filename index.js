@@ -1,112 +1,89 @@
-// ==================== index.js ====================
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import chalk from "chalk";
-import pino from "pino";
-import crypto from "crypto";
-
-import config from "./config.js";
-import { loadSessionFromMega } from "./system/megaSession.js";
-
-import handleCommand, {
-  loadCommands,
-  handleParticipantUpdate
-} from "./handler.js";
-
 import makeWASocket, {
-  Browsers,
-  DisconnectReason,
   fetchLatestBaileysVersion,
-  useMultiFileAuthState
+  Browsers,
+  DisconnectReason
 } from "@whiskeysockets/baileys";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import pino from "pino";
+import config from "./config.js";
+import { loadSessionFromMega } from "./system/loadSession.js";
+import { handleCommand, loadCommands } from "./handler.js";
 
-if (!globalThis.crypto?.subtle) {
-  globalThis.crypto = crypto.webcrypto;
-}
-
-global.owner ??= config.OWNERS || [];
-global.SESSION_ID ??= config.SESSION_ID;
-global.botStartTime = Date.now();
-
-const sessionDir = path.join(__dirname, "session");
-const credsPath = path.join(sessionDir, "creds.json");
-
-if (!fs.existsSync(sessionDir)) {
-  fs.mkdirSync(sessionDir, { recursive: true });
-}
+console.log("🚀 Démarrage du bot...");
 
 async function startBot() {
   try {
-    console.log(chalk.yellow("🚀 Démarrage du bot..."));
 
-    await loadSessionFromMega(credsPath);
+    // 🔥 Charger la session ID
+    const { state, saveCreds } = await loadSessionFromMega();
 
-    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
     const { version } = await fetchLatestBaileysVersion();
 
     const sock = makeWASocket({
-      auth: state,
       version,
       logger: pino({ level: "silent" }),
-      browser: Browsers.macOS("Safari"),
-      printQRInTerminal: false
+      printQRInTerminal: false,
+      browser: Browsers.windows("Chrome"), // ⚠️ IMPORTANT
+      auth: state,
+      markOnlineOnConnect: true,
+      syncFullHistory: false
     });
 
-    // ================= LOAD COMMANDS =================
-    await loadCommands();
+    // 💾 Sauvegarde auto des creds
+    sock.ev.on("creds.update", saveCreds);
 
-    // ================= CONNECTION =================
-    sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
+    // 📡 Connexion
+    sock.ev.on("connection.update", async (update) => {
+      const { connection, lastDisconnect } = update;
+
       if (connection === "open") {
-        console.log(chalk.green("✅ BOT CONNECTÉ"));
+        console.log("✅ BOT CONNECTÉ AVEC SUCCÈS");
       }
 
       if (connection === "close") {
-        const reason = lastDisconnect?.error?.output?.statusCode;
-        console.log(chalk.red("❌ Déconnecté:"), reason);
+        const statusCode = lastDisconnect?.error?.output?.statusCode;
 
-        if (reason !== DisconnectReason.loggedOut) {
-          setTimeout(startBot, 5000);
+        if (statusCode === DisconnectReason.loggedOut || statusCode === 401) {
+          console.log("❌ Session invalide (401)");
+        } else {
+          console.log("🔄 Reconnexion...");
+          startBot();
         }
       }
     });
 
-    // ================= MESSAGE HANDLER =================
+    // 📩 Messages entrants
     sock.ev.on("messages.upsert", async ({ messages }) => {
-      if (!messages?.length) return;
-
-      for (const msg of messages) {
-        if (!msg?.message) continue;
-
-        try {
-          await handleCommand(sock, msg);
-        } catch (err) {
-          console.error("❌ Message Handler Error:", err);
-        }
-      }
-    });
-
-    // ================= GROUP UPDATE =================
-    sock.ev.on("group-participants.update", async update => {
       try {
-        await handleParticipantUpdate(sock, update);
+        const m = messages[0];
+        if (!m.message) return;
+        if (m.key && m.key.remoteJid === "status@broadcast") return;
+
+        await handleCommand(sock, m);
+
       } catch (err) {
-        console.error("❌ Group Update Error:", err);
+        console.log("❌ Erreur message:", err.message);
       }
     });
 
-    // ================= SAVE CREDS =================
-    sock.ev.on("creds.update", saveCreds);
+    // 📦 Chargement commandes (affichage propre)
+    const totalCommands = await loadCommands();
+    console.log(`📦 ${totalCommands} commandes chargées avec succès`);
 
   } catch (err) {
-    console.error("💀 ERREUR FATALE AU DÉMARRAGE");
-    console.error(err);
-    process.exit(1);
+    console.log("❌ Erreur critique:", err.message);
+    console.log("🔄 Redémarrage automatique...");
+    setTimeout(startBot, 5000);
   }
 }
+
+// 🔥 Anti crash global
+process.on("uncaughtException", (err) => {
+  console.log("❌ Uncaught Exception:", err.message);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.log("❌ Unhandled Rejection:", err);
+});
 
 startBot();
