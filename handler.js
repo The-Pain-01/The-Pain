@@ -9,7 +9,7 @@ const SETTINGS_FILE = "./data/settings.json";
 
 // ================= INIT DOSSIERS =================
 if (!fs.existsSync("./data")) {
-  fs.mkdirSync("./data");
+  fs.mkdirSync("./data", { recursive: true });
 }
 
 if (!fs.existsSync(SETTINGS_FILE)) {
@@ -27,45 +27,116 @@ global.mutedGroups = new Set(saved.mutedGroups || []);
 global.antilinkGroups = new Set(saved.antilinkGroups || []);
 
 function saveSettings() {
-  fs.writeFileSync(
-    SETTINGS_FILE,
-    JSON.stringify(
-      {
-        mutedGroups: [...global.mutedGroups],
-        antilinkGroups: [...global.antilinkGroups]
-      },
-      null,
-      2
-    )
-  );
+  try {
+    fs.writeFileSync(
+      SETTINGS_FILE,
+      JSON.stringify(
+        {
+          mutedGroups: [...global.mutedGroups],
+          antilinkGroups: [...global.antilinkGroups]
+        },
+        null,
+        2
+      )
+    );
+  } catch (err) {
+    console.log("❌ Erreur sauvegarde settings:", err.message);
+  }
 }
 
 // ================= LOAD COMMANDS =================
-async function loadCommands(dir = "./commands") {
+export async function loadCommands(dir = "./commands") {
   let count = 0;
 
-  for (const file of fs.readdirSync(dir)) {
-    const full = path.join(dir, file);
+  try {
+    const files = fs.readdirSync(dir);
 
-    if (file.endsWith(".js")) {
+    for (const file of files) {
+      if (!file.endsWith(".js")) continue;
+
+      const full = path.join(dir, file);
+
       try {
         const mod = await import(pathToFileURL(full));
         const cmd = mod.default;
 
-        if (cmd?.name) {
+        if (cmd?.name && typeof cmd.execute === "function") {
           commands[cmd.name.toLowerCase()] = cmd;
           count++;
         }
       } catch (err) {
-        console.error(`❌ Erreur dans ${file}`);
-        console.error(err);
-        process.exit(1);
+        console.log(`❌ Erreur chargement ${file}:`, err.message);
+        // ❌ On ne quitte plus le bot
       }
     }
-  }
 
-  console.log(`✅ ${count} commandes chargées avec succès`);
+    return count;
+
+  } catch (err) {
+    console.log("❌ Erreur lecture dossier commandes:", err.message);
+    return 0;
+  }
 }
 
 // ================= HANDLE COMMAND =================
-async function handleCommand(sock, mRaw) {
+export async function handleCommand(sock, mRaw) {
+  try {
+    if (!mRaw?.message) return;
+
+    const from = mRaw.key?.remoteJid;
+    if (!from) return;
+
+    const isGroup = from.endsWith("@g.us");
+
+    const body =
+      mRaw.message.conversation ||
+      mRaw.message.extendedTextMessage?.text ||
+      mRaw.message.imageMessage?.caption ||
+      mRaw.message.videoMessage?.caption ||
+      "";
+
+    if (!body.startsWith(config.PREFIX)) return;
+
+    const args = body
+      .slice(config.PREFIX.length)
+      .trim()
+      .split(/\s+/);
+
+    const commandName = args.shift()?.toLowerCase();
+    if (!commandName) return;
+
+    const cmd = commands[commandName];
+    if (!cmd) return;
+
+    // 🔥 Gestion mute groupe
+    if (isGroup && global.mutedGroups.has(from)) return;
+
+    // Wrapper message propre
+    const m = {
+      ...mRaw,
+      chat: from,
+      sender: isGroup
+        ? mRaw.key.participant
+        : from,
+      isGroup,
+      reply: (text) =>
+        sock.sendMessage(from, { text }, { quoted: mRaw })
+    };
+
+    await cmd.execute(sock, m, args);
+
+  } catch (err) {
+    console.log("❌ Command Error:", err.message);
+  }
+}
+
+// ================= HANDLE GROUP UPDATE =================
+export async function handleParticipantUpdate(sock, update) {
+  try {
+    console.log("📢 Group Update:", update.action);
+  } catch (err) {
+    console.log("❌ Group Update Error:", err.message);
+  }
+}
+
+export default handleCommand;
