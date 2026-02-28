@@ -1,6 +1,6 @@
 {
-  "name": "THE_PAIN-MD",
-  "version": "2.0.0",
+  "name": "the-pain-md",
+  "version": "3.0.0",
   "description": "WhatsApp Multi-Device Bot using Baileys v7",
   "main": "index.js",
   "type": "module",
@@ -18,28 +18,32 @@
     "@whiskeysockets/baileys": "^7.0.0-rc.6",
     "@adiwajshing/keyed-db": "^0.2.4",
     "@hapi/boom": "^10.0.1",
+    "@vitalets/google-translate-api": "^7.0.0",
     "axios": "^1.12.2",
     "awesome-phonenumber": "^6.4.0",
     "chalk": "^5.3.0",
+    "cheerio": "^1.0.0-rc.12",
     "crypto-js": "^4.2.0",
-    "he": "^1.2.0",
     "fflate": "^0.8.2",
     "fluent-ffmpeg": "^2.1.3",
     "form-data": "^4.0.0",
     "fs-extra": "^11.3.1",
+    "he": "^1.2.0",
     "human-readable": "^0.2.1",
     "jimp": "^1.6.0",
     "moment-timezone": "^0.5.38",
-    "node-fetch": "^2.6.1",
+    "node-fetch": "^3.3.2",
     "node-webpmux": "^3.1.0",
     "pino": "^9.5.0",
     "qrcode-terminal": "^0.12.0",
     "ruhend-scraper": "^9.0.8",
     "sharp": "^0.34.3",
-     "mumaker": "^2.0.0",
     "wa-sticker-formatter": "^4.4.4",
-     "cheerio": "^1.0.0-rc.12",
+    "mumaker": "^2.0.0",
     "yt-search": "^2.12.1",
-    "@vitalets/google-translate-api": "^7.0.0"
+    "ytdl-core": "^4.11.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   }
 }
