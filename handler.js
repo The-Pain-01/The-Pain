@@ -7,6 +7,16 @@ import config from "./config.js";
 const commands = {};
 const SETTINGS_FILE = "./data/settings.json";
 
+// ================= REACTIONS SOMBRES =================
+const darkReactions = [
+  "🩸","☠️","👹","👺","🧠","🫀","🌹","🔥",
+  "🕸️","🕷️","❄️","🥷🏽","🤖","🌟","👨🏽‍💻"
+];
+
+function randomReaction() {
+  return darkReactions[Math.floor(Math.random() * darkReactions.length)];
+}
+
 // ================= INIT DOSSIERS =================
 if (!fs.existsSync("./data")) {
   fs.mkdirSync("./data", { recursive: true });
@@ -66,12 +76,10 @@ export async function loadCommands(dir = "./commands") {
         }
       } catch (err) {
         console.log(`❌ Erreur chargement ${file}:`, err.message);
-        // ❌ On ne quitte plus le bot
       }
     }
 
     return count;
-
   } catch (err) {
     console.log("❌ Erreur lecture dossier commandes:", err.message);
     return 0;
@@ -108,7 +116,7 @@ export async function handleCommand(sock, mRaw) {
     const cmd = commands[commandName];
     if (!cmd) return;
 
-    // 🔥 Gestion mute groupe
+    // 🔥 Groupe mute
     if (isGroup && global.mutedGroups.has(from)) return;
 
     // Wrapper message propre
@@ -123,10 +131,44 @@ export async function handleCommand(sock, mRaw) {
         sock.sendMessage(from, { text }, { quoted: mRaw })
     };
 
-    await cmd.execute(sock, m, args);
+    // ================= REACTION START =================
+    try {
+      await sock.sendMessage(from, {
+        react: {
+          text: randomReaction(),
+          key: mRaw.key
+        }
+      });
+    } catch {}
+
+    // ================= EXECUTION SAFE =================
+    try {
+      await cmd.execute(sock, m, args);
+
+      // ✅ Succès
+      await sock.sendMessage(from, {
+        react: {
+          text: "✅",
+          key: mRaw.key
+        }
+      });
+
+    } catch (err) {
+      console.log("❌ Command Error:", err.message);
+
+      // ❌ Erreur
+      try {
+        await sock.sendMessage(from, {
+          react: {
+            text: "❌",
+            key: mRaw.key
+          }
+        });
+      } catch {}
+    }
 
   } catch (err) {
-    console.log("❌ Command Error:", err.message);
+    console.log("❌ Handler Fatal Error:", err.message);
   }
 }
 
