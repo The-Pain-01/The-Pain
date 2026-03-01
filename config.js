@@ -25,13 +25,15 @@ const defaultConfig = {
   // 🔥 IA APIs (gratuites)
   AI_API: "https://api.safone.dev/ai/chat",
   GPT_API: "https://api.safone.dev/ai/chat",
+  OPENROUTER_API_KEY: "",
+  HUGGINGFACE_API_KEY: "",
 
   BOT_NAME: "🩸𝐓𝐇𝐄 𝐏𝐀𝐈𝐍🩸",
   FOOTER: "> POWER BY 🩸𝐓𝐇𝐄 𝐏𝐀𝐈𝐍🩸",
 
   LINKS: {
     group: "",
-    channel: "",
+    channel: "https://whatsapp.com/channel/0029Vb7FTvDICVfgeK27ul2S",
     telegram: ""
   }
 };
