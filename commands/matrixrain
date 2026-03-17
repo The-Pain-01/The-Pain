@@ -1,0 +1,14 @@
+export default{
+name:"matrixrain",
+async execute(sock,m){
+
+let rain=""
+
+for(let i=0;i<200;i++){
+rain+=Math.random()>0.5?"1":"0"
+}
+
+await sock.sendMessage(m.chat,{text:rain},{quoted:m})
+
+}
+}
