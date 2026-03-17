@@ -1,0 +1,16 @@
+export default{
+name:"scanuser",
+async execute(sock,m){
+
+const msg=`
+🔍 USER SCAN
+
+Name: ${m.pushName}
+Status: Online
+Threat Level: Unknown
+`
+
+await sock.sendMessage(m.chat,{text:msg},{quoted:m})
+
+}
+}
