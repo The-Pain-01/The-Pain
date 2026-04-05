@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ================== CONFIG PAR DÉFAUT ==================
+// ================== CONFIGURATION ==================
 const defaultConfig = {
   SESSION_ID: "",
 
@@ -22,7 +22,6 @@ const defaultConfig = {
   restrict: false,
   blockInbox: false,
 
-  // APIs
   AI_API: "https://api.safone.dev/ai/chat",
   GPT_API: "https://api.safone.dev/ai/chat",
   OPENROUTER_API_KEY: "",
@@ -38,41 +37,43 @@ const defaultConfig = {
   }
 };
 
-// ================== DOSSIER DATA ==================
+// ================== DATA ==================
 const dataDir = path.join(__dirname, "data");
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
 const configPath = path.join(dataDir, "config.json");
 
-// ================== CRÉATION CONFIG ==================
+// ================== CREATE ==================
 if (!fs.existsSync(configPath)) {
   fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2));
   console.log("✅ config.json créé");
 }
 
-// ================== LECTURE ==================
+// ================== LOAD ==================
 let userConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 
-// ================== 🔥 FIX SESSION pain~ ==================
-if (userConfig.SESSION_ID && userConfig.SESSION_ID.startsWith("pain~")) {
-  try {
-    const raw = userConfig.SESSION_ID.replace("pain~", "");
+// ================== 🔥 KAYA SYSTEM FIX ==================
+function fixSession(session) {
+  if (!session) return session;
+
+  // 🔥 support pain~
+  if (session.startsWith("pain~")) {
+    const raw = session.replace("pain~", "");
     const [id, key] = raw.split("#");
 
     if (id && key) {
-      const fixed = `https://mega.nz/file/${id}#${key}`;
-      userConfig.SESSION_ID = fixed;
-
-      console.log("✅ SESSION pain~ convertie en URL valide");
-    } else {
-      console.log("❌ SESSION pain~ invalide");
+      return `https://mega.nz/file/${id}#${key}`;
     }
-  } catch (e) {
-    console.log("❌ ERREUR conversion session:", e);
   }
+
+  // déjà URL → on laisse
+  return session;
 }
 
-// ================== GLOBALS ==================
+// 🔥 APPLY FIX DIRECT
+userConfig.SESSION_ID = fixSession(userConfig.SESSION_ID);
+
+// ================== GLOBAL ==================
 global.owner = userConfig.OWNERS || [];
 global.mode = userConfig.MODE || "public";
 global.blockInbox = userConfig.blockInbox || false;
@@ -84,14 +85,8 @@ global.footer = userConfig.FOOTER || "";
 export function saveConfig(update = {}) {
   userConfig = { ...userConfig, ...update };
 
-  // 🔥 Re-apply fix si nouvelle session
-  if (update.SESSION_ID && update.SESSION_ID.startsWith("pain~")) {
-    const raw = update.SESSION_ID.replace("pain~", "");
-    const [id, key] = raw.split("#");
-
-    if (id && key) {
-      userConfig.SESSION_ID = `https://mega.nz/file/${id}#${key}`;
-    }
+  if (update.SESSION_ID) {
+    userConfig.SESSION_ID = fixSession(update.SESSION_ID);
   }
 
   fs.writeFileSync(configPath, JSON.stringify(userConfig, null, 2));
@@ -109,5 +104,4 @@ export function saveConfig(update = {}) {
   console.log("✅ Configuration mise à jour");
 }
 
-// ================== EXPORT ==================
 export default userConfig;
