@@ -1,52 +1,28 @@
 export function getQuotedMedia(m) {
-  const q = m.quoted?.message;
+
+  const q =
+    m?.quoted?.message;
 
   if (!q) return null;
 
-  // ===== VIEW ONCE =====
-  if (q.viewOnceMessageV2) {
-    const msg =
-      q.viewOnceMessageV2.message;
-
-    if (msg.imageMessage) {
-      return {
-        type: "image",
-        data: msg.imageMessage,
-        fromViewOnce: true
-      };
-    }
-
-    if (msg.videoMessage) {
-      return {
-        type: "video",
-        data: msg.videoMessage,
-        fromViewOnce: true
-      };
-    }
-  }
-
-  // ===== NORMAL =====
   if (q.imageMessage) {
     return {
-      type: "image",
-      data: q.imageMessage,
-      fromViewOnce: false
+      type: 'image',
+      data: q.imageMessage
     };
   }
 
   if (q.videoMessage) {
     return {
-      type: "video",
-      data: q.videoMessage,
-      fromViewOnce: false
+      type: 'video',
+      data: q.videoMessage
     };
   }
 
   if (q.stickerMessage) {
     return {
-      type: "sticker",
-      data: q.stickerMessage,
-      fromViewOnce: false
+      type: 'sticker',
+      data: q.stickerMessage
     };
   }
 
