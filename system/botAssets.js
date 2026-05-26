@@ -1,43 +1,26 @@
-import fs from 'fs';
-import path from 'path';
+export const BOT_NAME =
+  "𝐓𝐇𝐄_𝐏𝐀𝐈𝐍-𝐌𝐃";
 
-// Default bot image
-let botImagePath = 'https://files.catbox.moe/10v9f5.jpg';
+export const DEV =
+  "𝐓𝐇𝐄 𝐏𝐀𝐈𝐍";
 
-// Official bot name
-export const BOT_NAME = '𝐓𝐇𝐄_𝐏𝐀𝐈𝐍-MD ';
+export const CHANNEL =
+  "https://whatsapp.com/channel/0029Vb7FTvDICVfgeK27ul2S";
 
-// Bot slogan
-export const BOT_SLOGAN = '> MADE BY 𝐓𝐇𝐄 𝐏𝐀𝐈𝐍';
+export const IMAGES = {
 
-// ===================== Dynamic functions =====================
+  menu:
+    "https://files.catbox.moe/4plxc9.png",
 
-// Returns the current bot image (URL or local file)
-export function getBotImage() {
-  const customPath = path.join(process.cwd(), 'system', 'customBotImage.jpg');
-  if (fs.existsSync(customPath)) return customPath;
-  return botImagePath;
-}
+  support:
+    "https://files.catbox.moe/dr55vz.png",
 
-// Updates the bot image by saving a local file
-export function setBotImage(buffer) {
-  const customPath = path.join(process.cwd(), 'system', 'customBotImage.jpg');
-  fs.writeFileSync(customPath, buffer);
-}
+  botinfo:
+    "https://files.catbox.moe/r3s1u6.png",
 
-// Connection message — Ritual / Invocation style
-export function connectionMessage() {
-  return `
-╭───── 🕯️ ${BOT_NAME} 🕯️ ─────╮
-│ 🔮 RITUAL : COMPLETED
-│ 🩸 SEAL   : BROKEN
-│ ❄️ VOID   : OPEN
-│ 👁️ EYES   : WATCHING
-│ 🕰️ ${new Date().toLocaleString()}
-├───────────────────────────┤
-│ “The circle is drawn.
-│ The name was spoken.
-│ The Pain has answered.”
-╰───────────────────────────╯
-`;
-}
+  owner:
+    "https://files.catbox.moe/kf8r3t.png",
+
+  connect:
+    "https://files.catbox.moe/v72ssh.png"
+};
