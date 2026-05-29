@@ -1,26 +1,37 @@
+import config from '../config.js';
+
 export const BOT_NAME =
-  "𝐓𝐇𝐄_𝐏𝐀𝐈𝐍-𝐌𝐃";
+  config.BOT_NAME;
 
 export const DEV =
-  "𝐓𝐇𝐄 𝐏𝐀𝐈𝐍";
+  config.OWNER_NAME;
 
 export const CHANNEL =
-  "https://whatsapp.com/channel/0029Vb7FTvDICVfgeK27ul2S";
+  config.CHANNEL;
 
 export const IMAGES = {
 
   menu:
-    "https://files.catbox.moe/4plxc9.png",
+    config.MENU_IMAGE,
 
   support:
-    "https://files.catbox.moe/dr55vz.png",
+    config.SUPPORT_IMAGE,
 
   botinfo:
-    "https://files.catbox.moe/r3s1u6.png",
+    config.BOTINFO_IMAGE,
 
   owner:
-    "https://files.catbox.moe/kf8r3t.png",
+    config.OWNER_IMAGE,
 
   connect:
-    "https://files.catbox.moe/v72ssh.png"
+    config.CONNECT_IMAGE
+};
+
+export const AUDIOS = {
+
+  menu:
+    config.MENU_AUDIO,
+
+  connect:
+    config.CONNECT_AUDIO
 };
