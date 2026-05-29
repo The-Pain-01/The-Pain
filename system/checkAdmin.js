@@ -7,8 +7,8 @@ export async function checkAdmin(sock, chat, user) {
 
     const admins =
       meta.participants
-        .filter(p => p.admin)
-        .map(p => p.id);
+        .filter(v => v.admin)
+        .map(v => v.id);
 
     return admins.includes(user);
 
