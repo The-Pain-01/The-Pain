@@ -1,30 +1,25 @@
 export function getQuotedMedia(m) {
 
-  const q =
+  const quoted =
     m?.quoted?.message;
 
-  if (!q) return null;
+  if (!quoted)
+    return null;
 
-  if (q.imageMessage) {
+  if (quoted.imageMessage)
     return {
-      type: 'image',
-      data: q.imageMessage
+      type: 'image'
     };
-  }
 
-  if (q.videoMessage) {
+  if (quoted.videoMessage)
     return {
-      type: 'video',
-      data: q.videoMessage
+      type: 'video'
     };
-  }
 
-  if (q.stickerMessage) {
+  if (quoted.stickerMessage)
     return {
-      type: 'sticker',
-      data: q.stickerMessage
+      type: 'sticker'
     };
-  }
 
   return null;
 }
