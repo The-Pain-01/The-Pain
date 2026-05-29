@@ -1,130 +1,96 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import "dotenv/config";
+import dotenv from 'dotenv';
 
-// ================== ESM ==================
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+dotenv.config();
 
-// ================== DEFAULT CONFIG ==================
-const defaultConfig = {
-  SESSION_ID: process.env.SESSION_ID || "",
+const config = {
 
-  OWNERS: ["27727500078"],
+  // ==================== BOT ====================
 
-  PREFIX: ".",
-  TIMEZONE: "Africa/Kinshasa",
-  VERSION: "3.0.0",
+  BOT_NAME:
+    process.env.BOT_NAME ||
 
-  MODE: "public",
+    '𝐓𝐇𝐄_𝐏𝐀𝐈𝐍-𝐌𝐃',
 
-  autoRead: false,
-  restrict: false,
-  blockInbox: false,
+  PREFIX:
+    process.env.PREFIX || '.',
+
+  MODE:
+    process.env.MODE || 'private',
+
+  VERSION:
+    '6.0.0',
+
+  // ==================== OWNER ====================
+
+  OWNER_NAME:
+    process.env.OWNER_NAME ||
+
+    '𝐓𝐇𝐄 𝐏𝐀𝐈𝐍',
+
+  OWNERS: [
+    process.env.OWNER_NUMBER
+  ],
+
+  // ==================== CHANNEL ====================
+
+  CHANNEL:
+    process.env.CHANNEL_LINK ||
+
+    'https://whatsapp.com/channel/0029Vb7FTvDICVfgeK27ul2S',
+
+  // ==================== SYSTEM ====================
+
+  AUTO_READ:
+    process.env.AUTO_READ === 'true',
+
+  AUTO_TYPING:
+    process.env.AUTO_TYPING === 'true',
+
+  AUTO_RECORDING:
+    process.env.AUTO_RECORDING === 'true',
+
+  AUTO_STATUS_VIEW:
+    process.env.AUTO_STATUS_VIEW === 'true',
+
+  // ==================== IA APIs ====================
 
   OPENROUTER_API_KEY:
-    process.env.OPENROUTER_API_KEY || "",
+    process.env.OPENROUTER_API_KEY,
 
   HUGGINGFACE_API_KEY:
-    process.env.HUGGINGFACE_API_KEY || "",
+    process.env.HUGGINGFACE_API_KEY,
 
-  BOT_NAME: "𝐓𝐇𝐄_𝐏𝐀𝐈𝐍-𝐌𝐃",
+  GEMINI_API_KEY:
+    process.env.GEMINI_API_KEY,
 
-  FOOTER: "> POWER BY 𝐓𝐇𝐄 𝐏𝐀𝐈𝐍",
+  OPENAI_API_KEY:
+    process.env.OPENAI_API_KEY,
 
-  DEV: "𝐓𝐇𝐄 𝐏𝐀𝐈𝐍",
+  CLAUDE_API_KEY:
+    process.env.CLAUDE_API_KEY,
 
-  LINKS: {
-    group: "",
-    channel: "",
-    telegram: ""
-  }
+  // ==================== MEDIA ====================
+
+  MENU_IMAGE:
+    'https://files.catbox.moe/4plxc9.png',
+
+  SUPPORT_IMAGE:
+    'https://files.catbox.moe/dr55vz.png',
+
+  BOTINFO_IMAGE:
+    'https://files.catbox.moe/r3s1u6.png',
+
+  OWNER_IMAGE:
+    'https://files.catbox.moe/kf8r3t.png',
+
+  CONNECT_IMAGE:
+    'https://files.catbox.moe/v72ssh.png',
+
+  MENU_AUDIO:
+    'https://files.catbox.moe/e4zfh9.mp3',
+
+  CONNECT_AUDIO:
+    'https://files.catbox.moe/239szf.mp3'
 };
 
-// ================== DATA ==================
-const dataDir = path.join(__dirname, "data");
-
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
-
-const configPath = path.join(dataDir, "config.json");
-
-// ================== CREATE ==================
-if (!fs.existsSync(configPath)) {
-  fs.writeFileSync(
-    configPath,
-    JSON.stringify(defaultConfig, null, 2)
-  );
-
-  console.log("✅ config.json créé");
-}
-
-let userConfig = JSON.parse(
-  fs.readFileSync(configPath, "utf-8")
-);
-
-// ================== GLOBALS ==================
-global.owner = userConfig.OWNERS || [];
-
-global.mode = userConfig.MODE || "public";
-
-global.blockInbox =
-  userConfig.blockInbox || false;
-
-global.autoRead =
-  userConfig.autoRead || false;
-
-global.botname =
-  userConfig.BOT_NAME || "𝐓𝐇𝐄_𝐏𝐀𝐈𝐍-𝐌𝐃";
-
-global.footer =
-  userConfig.FOOTER || "";
-
-// ================== SAVE ==================
-export function saveConfig(update = {}) {
-  userConfig = {
-    ...userConfig,
-    ...update
-  };
-
-  fs.writeFileSync(
-    configPath,
-    JSON.stringify(userConfig, null, 2)
-  );
-
-  if (update.MODE)
-    global.mode = update.MODE;
-
-  if (update.OWNERS)
-    global.owner = update.OWNERS;
-
-  if (
-    typeof update.blockInbox !== "undefined"
-  ) {
-    global.blockInbox =
-      update.blockInbox;
-  }
-
-  if (
-    typeof update.autoRead !== "undefined"
-  ) {
-    global.autoRead =
-      update.autoRead;
-  }
-
-  if (update.BOT_NAME) {
-    global.botname =
-      update.BOT_NAME;
-  }
-
-  if (update.FOOTER) {
-    global.footer =
-      update.FOOTER;
-  }
-
-  console.log("✅ Configuration mise à jour");
-}
-
-export default userConfig;
+export default config;
