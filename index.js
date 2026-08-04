@@ -1,89 +1,239 @@
 import makeWASocket, {
   fetchLatestBaileysVersion,
   Browsers,
-  DisconnectReason
+  DisconnectReason,
+  useMultiFileAuthState
 } from "@whiskeysockets/baileys";
 
 import pino from "pino";
+import readline from "readline";
 import config from "./config.js";
-import { loadSessionFromMega } from "./system/loadSession.js";
 import { handleCommand, loadCommands } from "./handler.js";
 
-console.log("🚀 Démarrage du bot...");
+console.log("🚀 Démarrage de THE_PAIN-MD...");
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+function question(text) {
+  return new Promise(resolve => rl.question(text, resolve));
+}
+
 
 async function startBot() {
+
   try {
 
-    // 🔥 Charger la session ID
-    const { state, saveCreds } = await loadSessionFromMega();
+    const { state, saveCreds } = await useMultiFileAuthState(
+      "./auth_info"
+    );
+
 
     const { version } = await fetchLatestBaileysVersion();
 
+
     const sock = makeWASocket({
+
       version,
-      logger: pino({ level: "silent" }),
+
+      logger: pino({
+        level: "silent"
+      }),
+
+      browser: Browsers.windows("Chrome"),
+
       printQRInTerminal: false,
-      browser: Browsers.windows("Chrome"), // ⚠️ IMPORTANT
+
       auth: state,
+
       markOnlineOnConnect: true,
+
       syncFullHistory: false
+
     });
 
-    // 💾 Sauvegarde auto des creds
-    sock.ev.on("creds.update", saveCreds);
 
-    // 📡 Connexion
-    sock.ev.on("connection.update", async (update) => {
-      const { connection, lastDisconnect } = update;
+    sock.ev.on(
+      "creds.update",
+      saveCreds
+    );
 
-      if (connection === "open") {
-        console.log("✅ BOT CONNECTÉ AVEC SUCCÈS");
-      }
 
-      if (connection === "close") {
-        const statusCode = lastDisconnect?.error?.output?.statusCode;
+    // 🔐 Premier démarrage : code de connexion
 
-        if (statusCode === DisconnectReason.loggedOut || statusCode === 401) {
-          console.log("❌ Session invalide (401)");
-        } else {
-          console.log("🔄 Reconnexion...");
-          startBot();
+    if (!sock.authState?.creds?.registered) {
+
+      const phoneNumber = await question(
+        "📱 Entre ton numéro WhatsApp avec indicatif (+243...): "
+      );
+
+
+      const code = await sock.requestPairingCode(
+        phoneNumber.replace(/[^0-9]/g, "")
+      );
+
+
+      console.log(
+        "\n━━━━━━━━━━━━━━━━━━"
+      );
+
+      console.log(
+        "🔑 CODE DE CONNEXION :",
+        code
+      );
+
+      console.log(
+        "━━━━━━━━━━━━━━━━━━\n"
+      );
+
+    }
+
+
+
+    sock.ev.on(
+      "connection.update",
+      async(update)=>{
+
+        const {
+          connection,
+          lastDisconnect
+        } = update;
+
+
+        if(connection === "open"){
+
+          console.log(
+            "✅ THE_PAIN-MD CONNECTÉ AVEC SUCCÈS"
+          );
+
         }
+
+
+
+        if(connection === "close"){
+
+          const status =
+          lastDisconnect?.error?.output?.statusCode;
+
+
+          if(
+            status === DisconnectReason.loggedOut ||
+            status === 401
+          ){
+
+            console.log(
+              "❌ Compte déconnecté, supprime auth_info puis reconnecte."
+            );
+
+          }
+
+          else{
+
+            console.log(
+              "🔄 Reconnexion..."
+            );
+
+            setTimeout(
+              startBot,
+              5000
+            );
+
+          }
+
+        }
+
       }
-    });
+    );
 
-    // 📩 Messages entrants
-    sock.ev.on("messages.upsert", async ({ messages }) => {
-      try {
-        const m = messages[0];
-        if (!m.message) return;
-        if (m.key && m.key.remoteJid === "status@broadcast") return;
 
-        await handleCommand(sock, m);
 
-      } catch (err) {
-        console.log("❌ Erreur message:", err.message);
+    sock.ev.on(
+      "messages.upsert",
+      async({messages})=>{
+
+        try{
+
+          const m = messages[0];
+
+          if(!m.message) return;
+
+
+          if(
+            m.key.remoteJid === "status@broadcast"
+          )
+          return;
+
+
+          await handleCommand(
+            sock,
+            m
+          );
+
+
+        }
+        catch(err){
+
+          console.log(
+            "❌ Erreur message:",
+            err.message
+          );
+
+        }
+
       }
-    });
+    );
 
-    // 📦 Chargement commandes (affichage propre)
-    const totalCommands = await loadCommands();
-    console.log(`📦 ${totalCommands} commandes chargées avec succès`);
 
-  } catch (err) {
-    console.log("❌ Erreur critique:", err.message);
-    console.log("🔄 Redémarrage automatique...");
-    setTimeout(startBot, 5000);
+
+    const totalCommands =
+    await loadCommands();
+
+
+    console.log(
+      `📦 ${totalCommands} commandes chargées`
+    );
+
+
   }
+  catch(err){
+
+    console.log(
+      "❌ Erreur critique:",
+      err.message
+    );
+
+
+    setTimeout(
+      startBot,
+      5000
+    );
+
+  }
+
 }
 
-// 🔥 Anti crash global
-process.on("uncaughtException", (err) => {
-  console.log("❌ Uncaught Exception:", err.message);
+
+
+process.on(
+"uncaughtException",
+(err)=>{
+ console.log(
+ "❌ Crash:",
+ err.message
+ );
 });
 
-process.on("unhandledRejection", (err) => {
-  console.log("❌ Unhandled Rejection:", err);
+
+process.on(
+"unhandledRejection",
+(err)=>{
+ console.log(
+ "❌ Promise:",
+ err
+ );
 });
+
 
 startBot();
