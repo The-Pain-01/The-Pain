@@ -3,23 +3,47 @@ export function getQuotedMedia(m) {
   const quoted =
     m?.quoted?.message;
 
+
   if (!quoted)
     return null;
 
-  if (quoted.imageMessage)
+
+
+  const msg =
+    quoted.ephemeralMessage?.message ||
+    quoted.viewOnceMessage?.message ||
+    quoted;
+
+
+
+  if (msg.imageMessage)
     return {
-      type: 'image'
+      type: "image",
+      message: msg.imageMessage
     };
 
-  if (quoted.videoMessage)
+
+  if (msg.videoMessage)
     return {
-      type: 'video'
+      type: "video",
+      message: msg.videoMessage
     };
 
-  if (quoted.stickerMessage)
+
+  if (msg.stickerMessage)
     return {
-      type: 'sticker'
+      type: "sticker",
+      message: msg.stickerMessage
     };
+
+
+  if (msg.documentMessage)
+    return {
+      type: "document",
+      message: msg.documentMessage
+    };
+
 
   return null;
+
 }
