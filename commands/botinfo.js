@@ -1,36 +1,42 @@
+import config from "../config.js";
+
+
 export default {
-  name: 'botinfo',
-  async execute(sock, m) {
-    const BOT_NAME = global.BOT_NAME || '𝐓𝐇𝐄 𝐏𝐀𝐈𝐍-MD';
-    const mode = global.mode || 'public';
 
-    const text = `
-☠️ ${BOT_NAME} ☠️
+name:"botinfo",
 
-🤖 Bot : ${BOT_NAME}
-🧩 Commands : ${Object.keys(global.commands || {}).length || '—'}
-⚙️ Mode : ${mode.toUpperCase()}
-⏳ Uptime : ${Math.floor(process.uptime())}s
+
+async execute(sock,m){
+
+
+const text = `
+
+☠️ ${config.BOT_NAME} ☠️
+
+
+🤖 Bot :
+${config.BOT_NAME}
+
+
+⚙️ Mode :
+${config.MODE.toUpperCase()}
+
+
+⏳ Uptime :
+${Math.floor(process.uptime())}s
+
 
 🩸 Système stable
-🧊 Contrôle total actif
+
+☠️ THE PAIN SYSTEM ACTIVE
+
 `;
 
-    await sock.sendMessage(
-      m.chat,
-      {
-        text,
-        contextInfo: {
-          isForwarded: true,
-          forwardingScore: 999,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: '120363422649925479@newsletter',
-            newsletterName: '⏤͟͟͞𝐓𝐇𝐄 亗 𝐏𝐀𝐈𝐍 亗 𝐓𝐄𝐂𝐇᭄',
-            serverMessageId: 1
-          }
-        }
-      },
-      { quoted: m }
-    );
-  }
+
+
+await m.reply(text);
+
+
+}
+
 };
