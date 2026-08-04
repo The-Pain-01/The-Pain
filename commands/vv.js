@@ -1,27 +1,71 @@
-import { getQuotedMedia } from '../system/getQuotedMedia.js';
+import { getQuotedMedia } from "../system/getQuotedMedia.js";
+
 
 export default {
-  name: 'vv',
-  description: 'Récupère un média en vue unique',
-  category: 'dark',
 
-  async execute(sock, m) {
-    const media = getQuotedMedia(m);
+name:"vv",
 
-    if (!media) {
-      return sock.sendMessage(
-        m.chat,
-        { text: '☠️ Aucun média view-once détecté.\n➡️ Réponds au message.' },
-        { quoted: m }
-      );
-    }
 
-    await sock.sendMessage(
-      m.chat,
-      media.imageMessage
-        ? { image: media, caption: '🩸 VIEW ONCE DÉVOILÉ 🩸' }
-        : { video: media, caption: '🩸 VIEW ONCE DÉVOILÉ 🩸' },
-      { quoted: m }
-    );
-  }
+async execute(sock,m){
+
+
+const media =
+getQuotedMedia(m);
+
+
+if(!media)
+
+return m.reply(
+"☠️ Aucun média trouvé."
+);
+
+
+
+if(media.type==="image"){
+
+const buffer =
+await sock.downloadMediaMessage({
+message:{
+imageMessage:media.message
+}
+});
+
+
+return sock.sendMessage(
+m.chat,
+{
+image:buffer,
+caption:"🩸 VIEW ONCE DÉVOILÉ"
+},
+{quoted:m}
+);
+
+}
+
+
+
+if(media.type==="video"){
+
+const buffer =
+await sock.downloadMediaMessage({
+message:{
+videoMessage:media.message
+}
+});
+
+
+return sock.sendMessage(
+m.chat,
+{
+video:buffer,
+caption:"🩸 VIEW ONCE DÉVOILÉ"
+},
+{quoted:m}
+);
+
+}
+
+
+}
+
 };
