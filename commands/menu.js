@@ -1,123 +1,127 @@
+import config from "../config.js";
+import { getMenu } from "../handler.js";
+import { AUDIOS } from "../system/botAssets.js";
+
+
 export default {
-  name: 'menu',
-  async execute(sock, m) {
-    const uptime = process.uptime();
-    const h = Math.floor(uptime / 3600);
-    const min = Math.floor((uptime % 3600) / 60);
-    const sec = Math.floor(uptime % 60);
 
-    const BOT_NAME = global.BOT_NAME || '𝐓𝐇𝐄 𝐏𝐀𝐈𝐍-MD';
-    const MODE = global.mode || 'public';
 
-    const BOT_IMAGE = 'https://files.catbox.moe/10v9f5.jpg';
+name:"menu",
 
-    const menu = `
+
+category:"general",
+
+
+
+async execute(sock,m){
+
+
+
+const uptime =
+process.uptime();
+
+
+
+const h =
+Math.floor(uptime / 3600);
+
+
+
+const min =
+Math.floor((uptime % 3600) / 60);
+
+
+
+const sec =
+Math.floor(uptime % 60);
+
+
+
+const text = `
+
 ╔══════════════════════╗
-     ☠️  ${BOT_NAME}  ☠️
+     ☠️ 𝐓𝐇𝐄 𝐏𝐀𝐈𝐍 𝐌𝐃 ☠️
 ╚══════════════════════╝
 
-╭─📡 BOT INFO
-│ 🤖 Bot : ${BOT_NAME}
-│ 👤 User : ${m.pushName || 'Utilisateur'}
-│ 🧩 Commandes : ${Object.keys(global.commands || {}).length}
-│ ⚙️ Mode : ${MODE}
-│ ⏳ Uptime : ${h}h ${min}m ${sec}s
-╰───────────────
 
-🩸 DARK COMMANDS 🩸
+╭─❖ 🩸 𝐁𝐎𝐓 𝐈𝐍𝐅𝐎 🩸 ❖─╮
 
-╭─👁️ GÉNÉRAL
-│ .alive
-│ .botinfo
-│ .menu
-│ .mode
-│ .mychannelid
-│ .myid
-│ .owner
-│ .ping
-│ .rules
-│ .support
-╰───────────────
+│ ͟͟͞ᬼ⃟─► 🤖 𝐁𝐨𝐭 : ${config.BOT_NAME}
+│ ͟͟͞ᬼ⃟─► 👤 𝐔𝐬𝐞𝐫 : ${m.pushName || "Unknown"}
+│ ͟͟͞ᬼ⃟─► 👑 𝐃𝐞𝐯 : ${config.OWNER_NAME}
+│ ͟͟͞ᬼ⃟─► ⚙️ 𝐌𝐨𝐝𝐞 : ${config.MODE}
+│ ͟͟͞ᬼ⃟─► 📦 𝐕𝐞𝐫𝐬𝐢𝐨𝐧 : ${config.VERSION}
+│ ͟͟͞ᬼ⃟─► ⏳ 𝐔𝐩𝐭𝐢𝐦𝐞 : ${h}h ${min}m ${sec}s
+│ ͟͟͞ᬼ⃟─► 🧩 𝐂𝐨𝐦𝐦𝐚𝐧𝐝𝐞𝐬 : ${Object.keys(global.commands).length}
 
-╭─⚙️ PARAMÈTRES
-│ .autoread on/off
-│ .off
-│ .on
-│ .recording on/off
-│ .setdesc
-│ .setname
-│ .typing on/off
-╰───────────────
+╰─────────────❖
 
-╭─🛡️ MODÉRATION
-│ .antibot on/off
-│ .antilink on/off
-│ .ban
-│ .mute
-│ .purge
-│ .unban
-│ .unmute
-│ .warn
-╰───────────────
 
-╭─👥 GROUPE
-│ .add
-│ .admins
-│ .demote
-│ .goodbye
-│ .hidetag
-│ .kick
-│ .kickall
-│ .left
-│ .members
-│ .online
-│ .promote
-│ .tag
-│ .tagall
-│ .welcome
-╰───────────────
 
-╭─🧊 UTILITAIRES
-│ .save
-│ .shorturl
-│ .sticker
-│ .toimg
-│ .translate
-│ .tts
-│ .url
-│ .vv
-│ .take
-╰───────────────
+${getMenu()}
 
-╭─☠️ FUN / DARK
-│ .curse
-│ .darkquote
-│ .deathclock
-│ .painfact
-│ .shadow
-│ .summon
-│ .insult
-╰───────────────
 
-> POWER BY 🩸𝐓𝐇𝐄 𝐏𝐀𝐈𝐍🩸
+
+╭─❖ 🌐 𝐂𝐇𝐀𝐍𝐍𝐄𝐋 🌐 ❖─╮
+
+│ ͟͟͞ᬼ⃟─► ⏤͟͟͞𝐓𝐇𝐄 亗 𝐏𝐀𝐈𝐍 亗 𝐓𝐄𝐂𝐇᭄
+
+╰─────────────❖
+
+
+
+🩸 POWERED BY —͟͟͞͞𝐓𝐇𝐄 ➪ 𝐏𝐀𝐈𝐍 ᭄ 🩸
+
 `;
 
-    await sock.sendMessage(
-      m.chat,
-      {
-        image: { url: BOT_IMAGE },
-        caption: menu,
-        contextInfo: {
-          isForwarded: true,
-          forwardingScore: 999,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: '120363422649925479@newsletter',
-            newsletterName: '⏤͟͟͞𝐓𝐇𝐄 亗 𝐏𝐀𝐈𝐍 亗 𝐓𝐄𝐂𝐇᭄',
-            serverMessageId: 1
-          }
-        }
-      },
-      { quoted: m }
-    );
-  }
+
+
+await sock.sendMessage(
+
+m.chat,
+
+{
+
+image:{
+url:config.MENU_IMAGE
+},
+
+caption:text
+
+},
+
+{
+quoted:m
+}
+
+);
+
+
+
+await sock.sendMessage(
+
+m.chat,
+
+{
+
+audio:{
+url:AUDIOS.menu
+},
+
+mimetype:"audio/mpeg",
+
+ptt:false
+
+},
+
+{
+quoted:m
+}
+
+);
+
+
+
+}
+
 };
