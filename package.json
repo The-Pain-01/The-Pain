@@ -1,18 +1,15 @@
 {
-  "name": "the_pain_md",
-  "version": "6.0.0",
-  "description": "☠️ THE PAIN MD ☠️",
+  "name": "the-pain-md",
+  "version": "1.0.0",
+  "description": "☠️ THE PAIN MD — WhatsApp Bot",
   "main": "index.js",
   "type": "module",
-
   "scripts": {
-    "start": "node ."
+    "start": "node index.js"
   },
-
   "engines": {
     "node": "20.x"
   },
-
   "dependencies": {
     "@whiskeysockets/baileys": "latest",
     "dotenv": "^16.4.5",
