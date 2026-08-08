@@ -1,49 +1,99 @@
-export function getQuotedMedia(m) {
-
-  const quoted =
-    m?.quoted?.message;
+export function getQuotedMedia(m){
 
 
-  if (!quoted)
-    return null;
+try{
 
 
+const quoted =
 
-  const msg =
-    quoted.ephemeralMessage?.message ||
-    quoted.viewOnceMessage?.message ||
-    quoted;
+m.message
+?.extendedTextMessage
+?.contextInfo
+?.quotedMessage;
 
 
 
-  if (msg.imageMessage)
-    return {
-      type: "image",
-      message: msg.imageMessage
-    };
+if(!quoted)
+return null;
 
 
-  if (msg.videoMessage)
-    return {
-      type: "video",
-      message: msg.videoMessage
-    };
+
+if(quoted.imageMessage){
 
 
-  if (msg.stickerMessage)
-    return {
-      type: "sticker",
-      message: msg.stickerMessage
-    };
+return {
+
+type:"image",
+
+message:quoted.imageMessage
+
+};
 
 
-  if (msg.documentMessage)
-    return {
-      type: "document",
-      message: msg.documentMessage
-    };
+}
 
 
-  return null;
+
+if(quoted.videoMessage){
+
+
+return {
+
+type:"video",
+
+message:quoted.videoMessage
+
+};
+
+
+}
+
+
+
+if(quoted.audioMessage){
+
+
+return {
+
+type:"audio",
+
+message:quoted.audioMessage
+
+};
+
+
+}
+
+
+
+if(quoted.stickerMessage){
+
+
+return {
+
+type:"sticker",
+
+message:quoted.stickerMessage
+
+};
+
+
+}
+
+
+
+return null;
+
+
+
+}
+catch{
+
+
+return null;
+
+
+}
+
 
 }
