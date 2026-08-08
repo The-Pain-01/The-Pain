@@ -1,39 +1,77 @@
-export function runtime(seconds) {
-
-  seconds = Number(seconds || 0);
+export function runtime(seconds){
 
 
-  const d =
-    Math.floor(
-      seconds / (3600 * 24)
-    );
+seconds =
+Number(seconds);
 
 
-  const h =
-    Math.floor(
-      (seconds % (3600 * 24)) / 3600
-    );
+
+const days =
+Math.floor(
+seconds / (3600 * 24)
+);
 
 
-  const m =
-    Math.floor(
-      (seconds % 3600) / 60
-    );
+
+const hours =
+Math.floor(
+(seconds % (3600 * 24)) / 3600
+);
 
 
-  const s =
-    Math.floor(
-      seconds % 60
-    );
+
+const minutes =
+Math.floor(
+(seconds % 3600) / 60
+);
 
 
-  return [
-    d ? `${d}d` : "",
-    h ? `${h}h` : "",
-    m ? `${m}m` : "",
-    `${s}s`
-  ]
-  .filter(Boolean)
-  .join(" ");
+
+const secs =
+Math.floor(
+seconds % 60
+);
+
+
+
+return [
+
+days ? `${days}d` : "",
+
+hours ? `${hours}h` : "",
+
+minutes ? `${minutes}m` : "",
+
+`${secs}s`
+
+]
+.filter(Boolean)
+.join(" ");
+
+
+
+}
+
+
+
+export function formatNumber(number){
+
+
+return number
+.toString()
+.replace(/\D/g,"");
+
+
+}
+
+
+
+export function sleep(ms){
+
+
+return new Promise(
+resolve=>setTimeout(resolve,ms)
+);
+
 
 }
