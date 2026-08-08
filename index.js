@@ -9,208 +9,326 @@ import pino from "pino";
 import readline from "readline";
 import config from "./config.js";
 import { handleCommand, loadCommands } from "./handler.js";
+import { IMAGES, AUDIOS } from "./system/botAssets.js";
 
-console.log("🚀 Démarrage de THE_PAIN-MD...");
+
+console.log(`
+☠️ 𝐓𝐇𝐄 𝐏𝐀𝐈𝐍 𝐌𝐃 ☠️
+
+🚀 SYSTEM STARTING...
+`);
+
+
 
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-function question(text) {
-  return new Promise(resolve => rl.question(text, resolve));
+
+function ask(text){
+
+return new Promise(resolve=>{
+
+rl.question(text,answer=>{
+
+resolve(answer);
+
+});
+
+});
+
 }
 
 
-async function startBot() {
 
-  try {
+async function startBot(){
 
-    const { state, saveCreds } = await useMultiFileAuthState(
-      "./auth_info"
-    );
 
+try{
 
-    const { version } = await fetchLatestBaileysVersion();
 
+const { state, saveCreds } =
+await useMultiFileAuthState("./session");
 
-    const sock = makeWASocket({
 
-      version,
 
-      logger: pino({
-        level: "silent"
-      }),
+const { version } =
+await fetchLatestBaileysVersion();
 
-      browser: Browsers.windows("Chrome"),
 
-      printQRInTerminal: false,
 
-      auth: state,
+const sock =
+makeWASocket({
 
-      markOnlineOnConnect: true,
+version,
 
-      syncFullHistory: false
+logger:pino({
+level:"silent"
+}),
 
-    });
+browser:
+Browsers.ubuntu("Chrome"),
 
+auth:state,
 
-    sock.ev.on(
-      "creds.update",
-      saveCreds
-    );
+printQRInTerminal:false,
 
+markOnlineOnConnect:true
 
-    // 🔐 Premier démarrage : code de connexion
+});
 
-    if (!sock.authState?.creds?.registered) {
 
-      const phoneNumber = await question(
-        "📱 Entre ton numéro WhatsApp avec indicatif (+243...): "
-      );
 
+if(!state.creds.registered){
 
-      const code = await sock.requestPairingCode(
-        phoneNumber.replace(/[^0-9]/g, "")
-      );
 
+let number =
+await ask(`
 
-      console.log(
-        "\n━━━━━━━━━━━━━━━━━━"
-      );
+╭─❖ 📱 CONNEXION ❖─╮
 
-      console.log(
-        "🔑 CODE DE CONNEXION :",
-        code
-      );
+Entre ton numéro WhatsApp :
 
-      console.log(
-        "━━━━━━━━━━━━━━━━━━\n"
-      );
+Format :
+✔ Sans +
+✔ Sans espace
 
-    }
+Exemple :
+27727500078
 
+Numéro : `);
 
 
-    sock.ev.on(
-      "connection.update",
-      async(update)=>{
 
-        const {
-          connection,
-          lastDisconnect
-        } = update;
+number =
+number.replace(/\D/g,"");
 
 
-        if(connection === "open"){
 
-          console.log(
-            "✅ THE_PAIN-MD CONNECTÉ AVEC SUCCÈS"
-          );
+console.log(`
 
-        }
+🔐 Génération du code...
 
+`);
 
 
-        if(connection === "close"){
 
-          const status =
-          lastDisconnect?.error?.output?.statusCode;
+const code =
+await sock.requestPairingCode(number);
 
 
-          if(
-            status === DisconnectReason.loggedOut ||
-            status === 401
-          ){
 
-            console.log(
-              "❌ Compte déconnecté, supprime auth_info puis reconnecte."
-            );
+console.log(`
 
-          }
+╭─❖ ☠️ CODE PAIRING ☠️ ❖─╮
 
-          else{
+│ ${code}
 
-            console.log(
-              "🔄 Reconnexion..."
-            );
+╰─────────────❖
 
-            setTimeout(
-              startBot,
-              5000
-            );
+`);
 
-          }
 
-        }
 
-      }
-    );
 
+try{
 
 
-    sock.ev.on(
-      "messages.upsert",
-      async({messages})=>{
+await sock.sendMessage(
+number+"@s.whatsapp.net",
+{
 
-        try{
+image:{
+url:IMAGES.connect
+},
 
-          const m = messages[0];
+caption:`
 
-          if(!m.message) return;
+☠️ 𝐓𝐇𝐄 𝐏𝐀𝐈𝐍 𝐌𝐃 ☠️
 
 
-          if(
-            m.key.remoteJid === "status@broadcast"
-          )
-          return;
+🔐 Code de connexion :
 
+${code}
 
-          await handleCommand(
-            sock,
-            m
-          );
 
+🩸 Entre ce code dans WhatsApp.
 
-        }
-        catch(err){
+`
 
-          console.log(
-            "❌ Erreur message:",
-            err.message
-          );
 
-        }
+}
+);
 
-      }
-    );
 
 
+await sock.sendMessage(
+number+"@s.whatsapp.net",
+{
 
-    const totalCommands =
-    await loadCommands();
+audio:{
+url:AUDIOS.connect
+},
 
+mimetype:"audio/mpeg"
 
-    console.log(
-      `📦 ${totalCommands} commandes chargées`
-    );
+}
 
+);
 
-  }
-  catch(err){
 
-    console.log(
-      "❌ Erreur critique:",
-      err.message
-    );
 
+}
+catch{}
 
-    setTimeout(
-      startBot,
-      5000
-    );
 
-  }
+
+}
+
+
+
+sock.ev.on(
+"creds.update",
+saveCreds
+);
+
+
+
+sock.ev.on(
+"connection.update",
+async(update)=>{
+
+
+const {
+connection,
+lastDisconnect
+}=update;
+
+
+
+if(connection==="open"){
+
+
+console.log(`
+
+✅ BOT CONNECTÉ
+
+☠️ 𝐓𝐇𝐄 𝐏𝐀𝐈𝐍 𝐌𝐃 ACTIVE
+
+`);
+
+
+}
+
+
+
+if(connection==="close"){
+
+
+const status =
+lastDisconnect
+?.error
+?.output
+?.statusCode;
+
+
+
+if(
+status===DisconnectReason.loggedOut ||
+status===401
+){
+
+
+console.log(
+"❌ Session invalide"
+);
+
+
+}
+else{
+
+
+console.log(
+"🔄 Reconnexion..."
+);
+
+
+startBot();
+
+
+}
+
+
+}
+
+
+
+});
+
+
+
+sock.ev.on(
+"messages.upsert",
+async({messages})=>{
+
+
+const m =
+messages[0];
+
+
+if(!m?.message)
+return;
+
+
+
+if(
+m.key.remoteJid==="status@broadcast"
+)
+return;
+
+
+
+await handleCommand(
+sock,
+m
+);
+
+
+
+});
+
+
+
+const total =
+await loadCommands();
+
+
+
+console.log(
+`📦 ${total} commandes chargées`
+);
+
+
+
+}
+catch(err){
+
+
+console.log(
+"❌ ERREUR :",
+err.message
+);
+
+
+setTimeout(
+startBot,
+5000
+);
+
+
+}
+
 
 }
 
@@ -218,22 +336,24 @@ async function startBot() {
 
 process.on(
 "uncaughtException",
-(err)=>{
- console.log(
- "❌ Crash:",
- err.message
- );
-});
+err=>
+console.log(
+"Crash :",
+err.message
+)
+);
+
 
 
 process.on(
 "unhandledRejection",
-(err)=>{
- console.log(
- "❌ Promise:",
- err
- );
-});
+err=>
+console.log(
+"Rejection :",
+err
+)
+);
+
 
 
 startBot();
