@@ -1,4 +1,11 @@
-node_modules
-auth_info/*
-!auth_info/.gitkeep
+node_modules/
+
 .env
+
+session/*
+!session/.gitkeep
+
+data/*
+!data/.gitkeep
+
+*.log
