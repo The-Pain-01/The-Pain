@@ -1,47 +1,20 @@
+
 export default {
+  name: "ping",
+  category: "general",
 
+  async execute(sock, m) {
+    const start = Date.now();
 
-name:"ping",
+    await sock.sendMessage(
+      m.chat,
+      { text: "⚡ Test de connexion..." },
+      { quoted: m }
+    );
 
+    const speed = Date.now() - start;
 
-category:"general",
-
-
-
-async execute(sock,m){
-
-
-
-const start =
-Date.now();
-
-
-
-await sock.sendMessage(
-
-m.chat,
-
-{
-
-text:"⚡ Test de connexion..."
-
-},
-
-{
-quoted:m
-}
-
-);
-
-
-
-const speed =
-Date.now()-start;
-
-
-
-const text = `
-
+    const text = `
 ╭─❖ ⚡ 𝐏𝐈𝐍𝐆 ⚡ ❖─╮
 
 │ ͟͟͞ᬼ⃟─► 🚀 𝐕𝐢𝐭𝐞𝐬𝐬𝐞 : ${speed}ms
@@ -50,31 +23,13 @@ const text = `
 
 ╰─────────────❖
 
-
 🩸 Connexion stable.
-
 `;
 
-
-
-await sock.sendMessage(
-
-m.chat,
-
-{
-
-text
-
-},
-
-{
-quoted:m
-}
-
-);
-
-
-
-}
-
+    await sock.sendMessage(
+      m.chat,
+      { text },
+      { quoted: m }
+    );
+  }
 };
