@@ -1,69 +1,57 @@
+
 import dotenv from "dotenv";
 
 dotenv.config();
 
+const ownerNumbers = (process.env.OWNER_NUMBER || "")
+  .split(",")
+  .map(number => number.replace(/\D/g, ""))
+  .filter(Boolean);
+
 const config = {
+  BOT_NAME: process.env.BOT_NAME || "𝐓𝐇𝐄 𝐏𝐀𝐈𝐍 𝐌𝐃",
 
-  BOT_NAME:
-    process.env.BOT_NAME ||
-    "𝐓𝐇𝐄 𝐏𝐀𝐈𝐍 𝐌𝐃",
+  PREFIX: process.env.PREFIX || ".",
 
-  PREFIX:
-    process.env.PREFIX ||
-    ".",
+  MODE: process.env.MODE || "private",
 
-  MODE:
-    process.env.MODE ||
-    "private",
+  VERSION: "3.0.0",
 
-  VERSION:
-    "1.0.0",
+  TIMEZONE: process.env.TIMEZONE || "Africa/Kinshasa",
 
   OWNER_NAME:
     process.env.OWNER_NAME ||
     "—͟͟͞͞𝐓𝐇𝐄 ➪ 𝐏𝐀𝐈𝐍 ᭄",
 
-  OWNERS:
-    [
-      process.env.OWNER_NUMBER
-    ].filter(Boolean),
+  OWNER: ownerNumbers[0] || "",
+
+  OWNERS: ownerNumbers,
 
   CHANNEL:
     process.env.CHANNEL_LINK ||
     "https://whatsapp.com/channel/0029Vb7FTvDICVfgeK27ul2S",
 
-  AUTO_READ:
-    process.env.AUTO_READ === "true",
+  AUTO_READ: process.env.AUTO_READ === "true",
 
-  AUTO_TYPING:
-    process.env.AUTO_TYPING === "true",
+  AUTO_TYPING: process.env.AUTO_TYPING === "true",
 
-  AUTO_RECORDING:
-    process.env.AUTO_RECORDING === "true",
+  AUTO_RECORDING: process.env.AUTO_RECORDING === "true",
 
-  AUTO_STATUS_VIEW:
-    process.env.AUTO_STATUS_VIEW === "true",
+  AUTO_STATUS_VIEW: process.env.AUTO_STATUS_VIEW === "true",
 
-  PAIN_THEME:
-    process.env.PAIN_THEME !== "false",
+  PAIN_THEME: process.env.PAIN_THEME !== "false",
 
-  DARK_MODE:
-    process.env.DARK_MODE !== "false",
+  DARK_MODE: process.env.DARK_MODE !== "false",
 
-  OPENROUTER_API_KEY:
-    process.env.OPENROUTER_API_KEY || "",
+  OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || "",
 
-  HUGGINGFACE_API_KEY:
-    process.env.HUGGINGFACE_API_KEY || "",
+  HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY || "",
 
-  GEMINI_API_KEY:
-    process.env.GEMINI_API_KEY || "",
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
 
-  OPENAI_API_KEY:
-    process.env.OPENAI_API_KEY || "",
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
 
-  CLAUDE_API_KEY:
-    process.env.CLAUDE_API_KEY || "",
+  CLAUDE_API_KEY: process.env.CLAUDE_API_KEY || "",
 
   MENU_IMAGE:
     process.env.MENU_IMAGE ||
