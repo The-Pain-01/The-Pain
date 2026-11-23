@@ -1,27 +1,16 @@
+
 import config from "../config.js";
 import { IMAGES } from "../system/botAssets.js";
 
-
 export default {
+  name: "alive",
+  category: "general",
 
-
-name:"alive",
-
-
-category:"general",
-
-
-
-async execute(sock,m){
-
-
-
-const text = `
-
+  async execute(sock, m) {
+    const text = `
 ╔══════════════════════╗
       ☠️ 𝐀𝐋𝐈𝐕𝐄 ☠️
 ╚══════════════════════╝
-
 
 ╭─❖ 🩸 𝐒𝐓𝐀𝐓𝐔𝐒 🩸 ❖─╮
 
@@ -32,37 +21,18 @@ const text = `
 
 ╰─────────────❖
 
-
 🩸 Le système est actif.
 
 ☠️ 𝐓𝐇𝐄 𝐏𝐀𝐈𝐍 𝐌𝐃 ☠️
-
 `;
 
-
-
-await sock.sendMessage(
-
-m.chat,
-
-{
-
-image:{
-url:IMAGES.botinfo
-},
-
-caption:text
-
-},
-
-{
-quoted:m
-}
-
-);
-
-
-
-}
-
+    await sock.sendMessage(
+      m.chat,
+      {
+        image: { url: IMAGES.botinfo },
+        caption: text
+      },
+      { quoted: m }
+    );
+  }
 };
