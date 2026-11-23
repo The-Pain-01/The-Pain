@@ -1,7 +1,25 @@
+
+# Environment variables and secrets
 .env
 .env.*
 !.env.example
+
+# Dependencies
 node_modules/
+
+# WhatsApp sessions and authentication
 session/
+sessions/
 auth_info/
+auth_info_baileys/
+
+# Local data
 data/*.json
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+.DS_Store
+Thumbs.db
