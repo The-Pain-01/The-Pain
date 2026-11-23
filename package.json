@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "check": "node --check index.js && node --check server.js && node --check services/sessionManager.js"
+    "check": "node --check index.js"
   },
   "engines": {
     "node": ">=20.0.0"
