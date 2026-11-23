@@ -9,6 +9,14 @@ global.commands = commands;
 
 const SETTINGS_FILE = "./data/settings.json";
 
+const SETTING_NAMES = [
+  "mutedGroups",
+  "antilinkGroups",
+  "welcomeGroups",
+  "antibotGroups",
+  "bannedUsers"
+];
+
 const CATEGORY_STYLES = {
   general: ["⚡", "⚡"],
   admin: ["🛡️", "🛡️"],
@@ -22,6 +30,10 @@ const CATEGORY_STYLES = {
   dark: ["☠️", "☠️"]
 };
 
+// --------------------------------------------------
+// SETTINGS
+// --------------------------------------------------
+
 if (!fs.existsSync("./data")) {
   fs.mkdirSync("./data", { recursive: true });
 }
@@ -30,60 +42,70 @@ if (!fs.existsSync(SETTINGS_FILE)) {
   fs.writeFileSync(SETTINGS_FILE, JSON.stringify({}, null, 2));
 }
 
-function createSettingsStore() {
-  let saved = {};
+function createSettingsStore(saved = {}) {
+  const settings = {};
 
-  try {
-    saved = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
-  } catch {
-    saved = {};
+  for (const name of SETTING_NAMES) {
+    settings[name] = new Set(saved[name] || []);
   }
 
-  return {
-    mutedGroups: new Set(saved.mutedGroups || []),
-    antilinkGroups: new Set(saved.antilinkGroups || []),
-    welcomeGroups: new Set(saved.welcomeGroups || []),
-    antibotGroups: new Set(saved.antibotGroups || []),
-    bannedUsers: new Set(saved.bannedUsers || [])
-  };
+  return settings;
 }
 
-// Compatibilité temporaire avec les anciennes commandes.
-// Le futur gestionnaire de sessions devra fournir un store par session.
-const defaultSettings = createSettingsStore();
+const defaultSettings = (() => {
+  try {
+    const saved = JSON.parse(
+      fs.readFileSync(SETTINGS_FILE, "utf8")
+    );
 
+    return createSettingsStore(saved);
+  } catch {
+    return createSettingsStore();
+  }
+})();
+
+// Compatibilité avec les anciennes commandes du bot autonome.
+// Les sessions du backend doivent utiliser sessionContext.settings.
 global.mutedGroups = defaultSettings.mutedGroups;
 global.antilinkGroups = defaultSettings.antilinkGroups;
 global.welcomeGroups = defaultSettings.welcomeGroups;
 global.antibotGroups = defaultSettings.antibotGroups;
 global.bannedUsers = defaultSettings.bannedUsers;
 
-export function createSessionSettings() {
-  return {
-    mutedGroups: new Set(),
-    antilinkGroups: new Set(),
-    welcomeGroups: new Set(),
-    antibotGroups: new Set(),
-    bannedUsers: new Set()
-  };
+export function createSessionSettings(saved = {}) {
+  return createSettingsStore(saved);
 }
 
 export function saveSettings(settings = defaultSettings) {
   try {
+    const saved = {};
+
+    for (const name of SETTING_NAMES) {
+      saved[name] = [...(settings[name] || [])];
+    }
+
     fs.writeFileSync(
       SETTINGS_FILE,
-      JSON.stringify({
-        mutedGroups: [...settings.mutedGroups],
-        antilinkGroups: [...settings.antilinkGroups],
-        welcomeGroups: [...settings.welcomeGroups],
-        antibotGroups: [...settings.antibotGroups],
-        bannedUsers: [...settings.bannedUsers]
-      }, null, 2)
+      JSON.stringify(saved, null, 2)
     );
   } catch (err) {
     console.log("❌ Erreur sauvegarde settings:", err.message);
   }
 }
+
+async function persistSessionSettings(settings, sessionContext) {
+  if (typeof sessionContext.saveSettings === "function") {
+    await sessionContext.saveSettings();
+    return;
+  }
+
+  // Sauvegarde locale uniquement pour le bot autonome.
+  saveSettings(settings);
+}
+
+// --------------------------------------------------
+// MENU
+// --------------------------------------------------
 
 function formatCommandName(name) {
   return String(name || "").trim().toUpperCase();
@@ -136,6 +158,10 @@ export function getMenu() {
   return output.trim();
 }
 
+// --------------------------------------------------
+// COMMAND LOADER
+// --------------------------------------------------
+
 export async function loadCommands(dir = "./commands") {
   let count = 0;
 
@@ -146,6 +172,7 @@ export async function loadCommands(dir = "./commands") {
   try {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
+      console.log("⚠️ Dossier commands créé.");
       return 0;
     }
 
@@ -188,6 +215,10 @@ export async function loadCommands(dir = "./commands") {
   }
 }
 
+// --------------------------------------------------
+// MESSAGE UTILITIES
+// --------------------------------------------------
+
 function unwrapMessage(message) {
   let current = message;
 
@@ -199,6 +230,7 @@ function unwrapMessage(message) {
       current.viewOnceMessageV2Extension?.message;
 
     if (!wrapper) break;
+
     current = wrapper;
   }
 
@@ -255,12 +287,16 @@ function createMessageWrapper(sock, mRaw, from, body) {
     chat: from,
     sender,
     isGroup,
+
     pushName:
       mRaw.pushName ||
       mRaw.verifiedBizName ||
       "Utilisateur",
+
     body,
+
     mentionedJid: contextInfo.mentionedJid || [],
+
     quoted: contextInfo.quotedMessage
       ? {
           message: contextInfo.quotedMessage,
@@ -268,6 +304,7 @@ function createMessageWrapper(sock, mRaw, from, body) {
           stanzaId: contextInfo.stanzaId
         }
       : null,
+
     reply: async (text) => {
       return sock.sendMessage(
         from,
@@ -278,12 +315,20 @@ function createMessageWrapper(sock, mRaw, from, body) {
   };
 }
 
+// --------------------------------------------------
+// OWNER CHECK
+// --------------------------------------------------
+
 function normalizeJid(value) {
   return String(value || "").trim();
 }
 
 function isOwner(sender) {
-  const owners = (config.OWNERS || []).map(number => {
+  const configuredOwners = Array.isArray(config.OWNERS)
+    ? config.OWNERS
+    : [];
+
+  const owners = configuredOwners.map(number => {
     const digits = String(number).replace(/\D/g, "");
     return `${digits}@s.whatsapp.net`;
   });
@@ -301,7 +346,15 @@ function isOwner(sender) {
   );
 }
 
-export async function handleCommand(sock, mRaw, sessionContext = {}) {
+// --------------------------------------------------
+// COMMAND HANDLER
+// --------------------------------------------------
+
+export async function handleCommand(
+  sock,
+  mRaw,
+  sessionContext = {}
+) {
   try {
     if (!mRaw?.message) return;
 
@@ -313,15 +366,20 @@ export async function handleCommand(sock, mRaw, sessionContext = {}) {
 
     if (!body) return;
 
+    // Paramètres propres à cette session.
     const settings = sessionContext.settings || defaultSettings;
 
-    if (sessionContext.autoRead ?? config.AUTO_READ) {
+    const autoRead =
+      sessionContext.autoRead ?? config.AUTO_READ ?? false;
+
+    if (autoRead) {
       try {
         await sock.readMessages([mRaw.key]);
       } catch {}
     }
 
-    const prefix = sessionContext.prefix || config.PREFIX;
+    const prefix =
+      sessionContext.prefix || config.PREFIX || ".";
 
     if (!body.startsWith(prefix)) return;
 
@@ -394,6 +452,7 @@ export async function handleCommand(sock, mRaw, sessionContext = {}) {
     } catch {}
 
     try {
+      // Le quatrième argument contient les données de cette session.
       await command.execute(sock, m, args, sessionContext);
 
       try {
@@ -405,7 +464,8 @@ export async function handleCommand(sock, mRaw, sessionContext = {}) {
         });
       } catch {}
 
-      saveSettings(settings);
+      await persistSessionSettings(settings, sessionContext);
+
     } catch (err) {
       console.log(`❌ Erreur .${commandName}:`, err);
 
@@ -424,10 +484,15 @@ export async function handleCommand(sock, mRaw, sessionContext = {}) {
         );
       } catch {}
     }
+
   } catch (err) {
     console.log("❌ Handler Fatal Error:", err.message);
   }
 }
+
+// --------------------------------------------------
+// GROUP PARTICIPANT UPDATES
+// --------------------------------------------------
 
 export async function handleParticipantUpdate(
   sock,
@@ -436,6 +501,7 @@ export async function handleParticipantUpdate(
 ) {
   try {
     const { id, participants, action } = update;
+
     const settings = sessionContext.settings || defaultSettings;
 
     if (
@@ -462,6 +528,7 @@ export async function handleParticipantUpdate(
         });
       }
     }
+
   } catch (err) {
     console.log("❌ Participant Update:", err.message);
   }
