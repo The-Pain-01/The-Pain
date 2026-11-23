@@ -1,99 +1,36 @@
-export function getQuotedMedia(m){
+export function getQuotedMedia(m) {
+  try {
+    const message = m?.message;
 
+    const contextInfo =
+      message?.extendedTextMessage?.contextInfo ||
+      message?.imageMessage?.contextInfo ||
+      message?.videoMessage?.contextInfo ||
+      message?.documentMessage?.contextInfo;
 
-try{
+    const quoted = contextInfo?.quotedMessage;
 
+    if (!quoted) return null;
 
-const quoted =
+    const messageTypes = [
+      ["image", "imageMessage"],
+      ["video", "videoMessage"],
+      ["audio", "audioMessage"],
+      ["sticker", "stickerMessage"],
+      ["document", "documentMessage"]
+    ];
 
-m.message
-?.extendedTextMessage
-?.contextInfo
-?.quotedMessage;
+    for (const [type, key] of messageTypes) {
+      if (quoted[key]) {
+        return {
+          type,
+          message: quoted[key]
+        };
+      }
+    }
 
-
-
-if(!quoted)
-return null;
-
-
-
-if(quoted.imageMessage){
-
-
-return {
-
-type:"image",
-
-message:quoted.imageMessage
-
-};
-
-
-}
-
-
-
-if(quoted.videoMessage){
-
-
-return {
-
-type:"video",
-
-message:quoted.videoMessage
-
-};
-
-
-}
-
-
-
-if(quoted.audioMessage){
-
-
-return {
-
-type:"audio",
-
-message:quoted.audioMessage
-
-};
-
-
-}
-
-
-
-if(quoted.stickerMessage){
-
-
-return {
-
-type:"sticker",
-
-message:quoted.stickerMessage
-
-};
-
-
-}
-
-
-
-return null;
-
-
-
-}
-catch{
-
-
-return null;
-
-
-}
-
-
+    return null;
+  } catch {
+    return null;
+  }
 }
