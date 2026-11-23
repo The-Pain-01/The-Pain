@@ -1,11 +1,7 @@
-node_modules/
-
 .env
-
-session/*
-!session/.gitkeep
-
-data/*
-!data/.gitkeep
-
-*.log
+.env.*
+!.env.example
+node_modules/
+session/
+auth_info/
+data/*.json
