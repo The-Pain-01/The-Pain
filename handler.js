@@ -30,30 +30,54 @@ if (!fs.existsSync(SETTINGS_FILE)) {
   fs.writeFileSync(SETTINGS_FILE, JSON.stringify({}, null, 2));
 }
 
-let saved = {};
+function createSettingsStore() {
+  let saved = {};
 
-try {
-  saved = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
-} catch {
-  saved = {};
+  try {
+    saved = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
+  } catch {
+    saved = {};
+  }
+
+  return {
+    mutedGroups: new Set(saved.mutedGroups || []),
+    antilinkGroups: new Set(saved.antilinkGroups || []),
+    welcomeGroups: new Set(saved.welcomeGroups || []),
+    antibotGroups: new Set(saved.antibotGroups || []),
+    bannedUsers: new Set(saved.bannedUsers || [])
+  };
 }
 
-global.mutedGroups = new Set(saved.mutedGroups || []);
-global.antilinkGroups = new Set(saved.antilinkGroups || []);
-global.welcomeGroups = new Set(saved.welcomeGroups || []);
-global.antibotGroups = new Set(saved.antibotGroups || []);
-global.bannedUsers = new Set(saved.bannedUsers || []);
+// Compatibilité temporaire avec les anciennes commandes.
+// Le futur gestionnaire de sessions devra fournir un store par session.
+const defaultSettings = createSettingsStore();
 
-function saveSettings() {
+global.mutedGroups = defaultSettings.mutedGroups;
+global.antilinkGroups = defaultSettings.antilinkGroups;
+global.welcomeGroups = defaultSettings.welcomeGroups;
+global.antibotGroups = defaultSettings.antibotGroups;
+global.bannedUsers = defaultSettings.bannedUsers;
+
+export function createSessionSettings() {
+  return {
+    mutedGroups: new Set(),
+    antilinkGroups: new Set(),
+    welcomeGroups: new Set(),
+    antibotGroups: new Set(),
+    bannedUsers: new Set()
+  };
+}
+
+export function saveSettings(settings = defaultSettings) {
   try {
     fs.writeFileSync(
       SETTINGS_FILE,
       JSON.stringify({
-        mutedGroups: [...global.mutedGroups],
-        antilinkGroups: [...global.antilinkGroups],
-        welcomeGroups: [...global.welcomeGroups],
-        antibotGroups: [...global.antibotGroups],
-        bannedUsers: [...global.bannedUsers]
+        mutedGroups: [...settings.mutedGroups],
+        antilinkGroups: [...settings.antilinkGroups],
+        welcomeGroups: [...settings.welcomeGroups],
+        antibotGroups: [...settings.antibotGroups],
+        bannedUsers: [...settings.bannedUsers]
       }, null, 2)
     );
   } catch (err) {
@@ -228,20 +252,15 @@ function createMessageWrapper(sock, mRaw, from, body) {
 
   return {
     ...mRaw,
-
     chat: from,
     sender,
     isGroup,
-
     pushName:
       mRaw.pushName ||
       mRaw.verifiedBizName ||
       "Utilisateur",
-
     body,
-
     mentionedJid: contextInfo.mentionedJid || [],
-
     quoted: contextInfo.quotedMessage
       ? {
           message: contextInfo.quotedMessage,
@@ -249,7 +268,6 @@ function createMessageWrapper(sock, mRaw, from, body) {
           stanzaId: contextInfo.stanzaId
         }
       : null,
-
     reply: async (text) => {
       return sock.sendMessage(
         from,
@@ -261,9 +279,7 @@ function createMessageWrapper(sock, mRaw, from, body) {
 }
 
 function normalizeJid(value) {
-  if (!value) return "";
-
-  return String(value).trim();
+  return String(value || "").trim();
 }
 
 function isOwner(sender) {
@@ -280,10 +296,12 @@ function isOwner(sender) {
 
   const senderNumber = normalizedSender.split("@")[0];
 
-  return owners.some(owner => owner.split("@")[0] === senderNumber);
+  return owners.some(
+    owner => owner.split("@")[0] === senderNumber
+  );
 }
 
-export async function handleCommand(sock, mRaw) {
+export async function handleCommand(sock, mRaw, sessionContext = {}) {
   try {
     if (!mRaw?.message) return;
 
@@ -295,15 +313,19 @@ export async function handleCommand(sock, mRaw) {
 
     if (!body) return;
 
-    if (config.AUTO_READ) {
+    const settings = sessionContext.settings || defaultSettings;
+
+    if (sessionContext.autoRead ?? config.AUTO_READ) {
       try {
         await sock.readMessages([mRaw.key]);
       } catch {}
     }
 
-    if (!body.startsWith(config.PREFIX)) return;
+    const prefix = sessionContext.prefix || config.PREFIX;
 
-    const content = body.slice(config.PREFIX.length).trim();
+    if (!body.startsWith(prefix)) return;
+
+    const content = body.slice(prefix.length).trim();
 
     if (!content) return;
 
@@ -319,14 +341,14 @@ export async function handleCommand(sock, mRaw) {
 
     const isGroup = from.endsWith("@g.us");
 
-    if (isGroup && global.mutedGroups.has(from)) {
+    if (isGroup && settings.mutedGroups.has(from)) {
       return;
     }
 
     const m = createMessageWrapper(sock, mRaw, from, body);
     const sender = m.sender;
 
-    if (global.bannedUsers.has(sender)) {
+    if (settings.bannedUsers.has(sender)) {
       return;
     }
 
@@ -338,7 +360,7 @@ export async function handleCommand(sock, mRaw) {
 
     if (command.ownerOnly && !isOwner(sender)) {
       return m.reply(
-        `☠️ Cette commande est réservée au DEV : ${config.PREFIX}${commandName}`
+        `☠️ Cette commande est réservée au DEV : ${prefix}${commandName}`
       );
     }
 
@@ -372,7 +394,7 @@ export async function handleCommand(sock, mRaw) {
     } catch {}
 
     try {
-      await command.execute(sock, m, args);
+      await command.execute(sock, m, args, sessionContext);
 
       try {
         await sock.sendMessage(from, {
@@ -383,7 +405,7 @@ export async function handleCommand(sock, mRaw) {
         });
       } catch {}
 
-      saveSettings();
+      saveSettings(settings);
     } catch (err) {
       console.log(`❌ Erreur .${commandName}:`, err);
 
@@ -407,13 +429,18 @@ export async function handleCommand(sock, mRaw) {
   }
 }
 
-export async function handleParticipantUpdate(sock, update) {
+export async function handleParticipantUpdate(
+  sock,
+  update,
+  sessionContext = {}
+) {
   try {
     const { id, participants, action } = update;
+    const settings = sessionContext.settings || defaultSettings;
 
     if (
       action === "add" &&
-      global.welcomeGroups.has(id)
+      settings.welcomeGroups.has(id)
     ) {
       const metadata = await sock
         .groupMetadata(id)
@@ -440,5 +467,5 @@ export async function handleParticipantUpdate(sock, update) {
   }
 }
 
-export { commands, saveSettings };
+export { commands };
 export default handleCommand;
