@@ -1,10 +1,10 @@
+
 import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "url";
 import config from "./config.js";
 
 const commands = {};
-
 global.commands = commands;
 
 const SETTINGS_FILE = "./data/settings.json";
@@ -27,98 +27,49 @@ if (!fs.existsSync("./data")) {
 }
 
 if (!fs.existsSync(SETTINGS_FILE)) {
-  fs.writeFileSync(
-    SETTINGS_FILE,
-    JSON.stringify({}, null, 2)
-  );
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify({}, null, 2));
 }
 
 let saved = {};
 
 try {
-  saved = JSON.parse(
-    fs.readFileSync(SETTINGS_FILE, "utf8")
-  );
+  saved = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
 } catch {
   saved = {};
 }
 
-global.mutedGroups =
-  new Set(saved.mutedGroups || []);
-
-global.antilinkGroups =
-  new Set(saved.antilinkGroups || []);
-
-global.welcomeGroups =
-  new Set(saved.welcomeGroups || []);
-
-global.antibotGroups =
-  new Set(saved.antibotGroups || []);
-
-global.bannedUsers =
-  new Set(saved.bannedUsers || []);
+global.mutedGroups = new Set(saved.mutedGroups || []);
+global.antilinkGroups = new Set(saved.antilinkGroups || []);
+global.welcomeGroups = new Set(saved.welcomeGroups || []);
+global.antibotGroups = new Set(saved.antibotGroups || []);
+global.bannedUsers = new Set(saved.bannedUsers || []);
 
 function saveSettings() {
   try {
     fs.writeFileSync(
       SETTINGS_FILE,
-      JSON.stringify(
-        {
-          mutedGroups: [
-            ...global.mutedGroups
-          ],
-
-          antilinkGroups: [
-            ...global.antilinkGroups
-          ],
-
-          welcomeGroups: [
-            ...global.welcomeGroups
-          ],
-
-          antibotGroups: [
-            ...global.antibotGroups
-          ],
-
-          bannedUsers: [
-            ...global.bannedUsers
-          ]
-        },
-        null,
-        2
-      )
+      JSON.stringify({
+        mutedGroups: [...global.mutedGroups],
+        antilinkGroups: [...global.antilinkGroups],
+        welcomeGroups: [...global.welcomeGroups],
+        antibotGroups: [...global.antibotGroups],
+        bannedUsers: [...global.bannedUsers]
+      }, null, 2)
     );
   } catch (err) {
-    console.log(
-      "❌ Erreur sauvegarde settings:",
-      err.message
-    );
+    console.log("❌ Erreur sauvegarde settings:", err.message);
   }
 }
 
-function getCategoryName(category) {
-  if (!category) return "𝐆𝐄𝐍𝐄𝐑𝐀𝐋";
-
-  return category
-    .toString()
-    .trim()
-    .toUpperCase()
-    .replace(/_/g, " ");
-}
-
 function formatCommandName(name) {
-  return name
-    .toString()
-    .trim()
-    .toUpperCase();
+  return String(name || "").trim().toUpperCase();
 }
 
 export function getMenu() {
   const grouped = {};
 
   for (const cmd of Object.values(commands)) {
-    const category =
-      cmd.category || "general";
+    const category = cmd.category || "general";
 
     if (!grouped[category]) {
       grouped[category] = [];
@@ -127,8 +78,7 @@ export function getMenu() {
     grouped[category].push(cmd);
   }
 
-  const categories =
-    Object.keys(grouped).sort();
+  const categories = Object.keys(grouped).sort();
 
   if (!categories.length) {
     return `
@@ -136,136 +86,114 @@ export function getMenu() {
 │
 │ ͟͟͞ᬼ⃟─► Aucune commande chargée
 │
-╰─────────────❖
-`;
+╰─────────────❖`;
   }
 
   let output = "";
 
   categories.forEach((category, index) => {
-    const commandsList =
-      grouped[category].sort(
-        (a, b) =>
-          a.name.localeCompare(b.name)
-      );
+    const commandsList = grouped[category].sort(
+      (a, b) => a.name.localeCompare(b.name)
+    );
 
-    const style =
-      CATEGORY_STYLES[category] ||
-      ["🔹", "🔹"];
+    const style = CATEGORY_STYLES[category] || ["🔹", "🔹"];
 
-    const leftEmoji = style[0];
-    const rightEmoji = style[1];
-
-    output +=
-`
-╭─❖ ${leftEmoji} 𝐆𝐑𝐎𝐔𝐏𝐄 ${index + 1} ${rightEmoji} ❖─╮
+    output += `
+╭─❖ ${style[0]} 𝐆𝐑𝐎𝐔𝐏𝐄 ${index + 1} ${style[1]} ❖─╮
 `;
 
     for (const cmd of commandsList) {
-      output +=
-`│ ͟͟͞ᬼ⃟─► ${formatCommandName(cmd.name)}
-`;
+      output += `│ ͟͟͞ᬼ⃟─► ${formatCommandName(cmd.name)}\n`;
     }
 
-    output +=
-`╰─────────────❖
-
-`;
+    output += "╰─────────────❖\n\n";
   });
 
   return output.trim();
 }
 
-export async function loadCommands(
-  dir = "./commands"
-) {
+export async function loadCommands(dir = "./commands") {
   let count = 0;
 
-  commands &&
-    Object.keys(commands).forEach(
-      key => delete commands[key]
-    );
+  for (const key of Object.keys(commands)) {
+    delete commands[key];
+  }
 
   try {
     if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, {
-        recursive: true
-      });
-
+      fs.mkdirSync(dir, { recursive: true });
       return 0;
     }
 
-    const files =
-      fs.readdirSync(dir);
+    const files = fs.readdirSync(dir);
 
     for (const file of files) {
-      if (!file.endsWith(".js")) {
-        continue;
-      }
+      if (!file.endsWith(".js")) continue;
 
-      const fullPath =
-        path.resolve(dir, file);
+      const fullPath = path.resolve(dir, file);
 
       try {
-        const module =
-          await import(
-            `${pathToFileURL(fullPath).href}?update=${Date.now()}`
-          );
+        const module = await import(
+          `${pathToFileURL(fullPath).href}?update=${Date.now()}`
+        );
 
-        const command =
-          module.default;
+        const command = module.default;
 
         if (
           command?.name &&
-          typeof command.execute ===
-            "function"
+          typeof command.execute === "function"
         ) {
-          commands[
-            command.name
-              .toString()
-              .toLowerCase()
-          ] = command;
-
+          commands[String(command.name).toLowerCase()] = command;
           count++;
         } else {
-          console.log(
-            `⚠️ Commande ignorée ${file}`
-          );
+          console.log(`⚠️ Commande ignorée : ${file}`);
         }
       } catch (err) {
-        console.log(
-          `❌ Erreur chargement ${file}:`,
-          err.message
-        );
+        console.log(`❌ Erreur chargement ${file}:`, err.message);
       }
     }
 
     global.commands = commands;
 
+    console.log(`📦 ${count} commandes chargées`);
+
     return count;
-
   } catch (err) {
-    console.log(
-      "❌ Erreur lecture commandes:",
-      err.message
-    );
-
+    console.log("❌ Erreur lecture commandes:", err.message);
     return 0;
   }
 }
 
+function unwrapMessage(message) {
+  let current = message;
+
+  while (current) {
+    const wrapper =
+      current.ephemeralMessage?.message ||
+      current.viewOnceMessage?.message ||
+      current.viewOnceMessageV2?.message ||
+      current.viewOnceMessageV2Extension?.message;
+
+    if (!wrapper) break;
+    current = wrapper;
+  }
+
+  return current || {};
+}
+
 function getMessageText(message) {
+  const msg = unwrapMessage(message);
+
   return (
-    message?.conversation ||
-    message?.extendedTextMessage?.text ||
-    message?.imageMessage?.caption ||
-    message?.videoMessage?.caption ||
-    message?.documentMessage?.caption ||
-    message?.buttonsResponseMessage
-      ?.selectedButtonId ||
-    message?.listResponseMessage
-      ?.singleSelectReply
-      ?.selectedRowId ||
+    msg.conversation ||
+    msg.extendedTextMessage?.text ||
+    msg.imageMessage?.caption ||
+    msg.videoMessage?.caption ||
+    msg.documentMessage?.caption ||
+    msg.buttonsResponseMessage?.selectedButtonId ||
+    msg.listResponseMessage?.singleSelectReply?.selectedRowId ||
+    msg.templateButtonReplyMessage?.selectedId ||
+    msg.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson ||
     ""
   );
 }
@@ -279,28 +207,30 @@ function getSender(mRaw, from) {
     );
   }
 
-  return from;
+  return (
+    mRaw.key?.participant ||
+    mRaw.key?.remoteJid ||
+    from
+  );
 }
 
-function createMessageWrapper(
-  sock,
-  mRaw,
-  from,
-  body
-) {
-  const isGroup =
-    from.endsWith("@g.us");
+function createMessageWrapper(sock, mRaw, from, body) {
+  const isGroup = from.endsWith("@g.us");
+  const sender = getSender(mRaw, from);
+  const msg = unwrapMessage(mRaw.message);
 
-  const sender =
-    getSender(mRaw, from);
+  const contextInfo =
+    msg.extendedTextMessage?.contextInfo ||
+    msg.imageMessage?.contextInfo ||
+    msg.videoMessage?.contextInfo ||
+    msg.documentMessage?.contextInfo ||
+    {};
 
   return {
     ...mRaw,
 
     chat: from,
-
     sender,
-
     isGroup,
 
     pushName:
@@ -310,197 +240,119 @@ function createMessageWrapper(
 
     body,
 
-    mentionedJid:
-      mRaw.message
-        ?.extendedTextMessage
-        ?.contextInfo
-        ?.mentionedJid ||
-      mRaw.message
-        ?.imageMessage
-        ?.contextInfo
-        ?.mentionedJid ||
-      [],
+    mentionedJid: contextInfo.mentionedJid || [],
 
-    quoted:
-      mRaw.message
-        ?.extendedTextMessage
-        ?.contextInfo
-        ?.quotedMessage
-        ? {
-            message:
-              mRaw.message
-                .extendedTextMessage
-                .contextInfo
-                .quotedMessage
-          }
-        : null,
+    quoted: contextInfo.quotedMessage
+      ? {
+          message: contextInfo.quotedMessage,
+          participant: contextInfo.participant,
+          stanzaId: contextInfo.stanzaId
+        }
+      : null,
 
-    reply: async text => {
+    reply: async (text) => {
       return sock.sendMessage(
         from,
-        { text },
+        { text: String(text) },
         { quoted: mRaw }
       );
     }
   };
 }
 
-export async function handleCommand(
-  sock,
-  mRaw
-) {
+function normalizeJid(value) {
+  if (!value) return "";
+
+  return String(value).trim();
+}
+
+function isOwner(sender) {
+  const owners = (config.OWNERS || []).map(number => {
+    const digits = String(number).replace(/\D/g, "");
+    return `${digits}@s.whatsapp.net`;
+  });
+
+  const normalizedSender = normalizeJid(sender);
+
+  if (owners.includes(normalizedSender)) {
+    return true;
+  }
+
+  const senderNumber = normalizedSender.split("@")[0];
+
+  return owners.some(owner => owner.split("@")[0] === senderNumber);
+}
+
+export async function handleCommand(sock, mRaw) {
   try {
     if (!mRaw?.message) return;
 
-    const from =
-      mRaw.key?.remoteJid;
+    const from = mRaw.key?.remoteJid;
 
-    if (!from) return;
+    if (!from || from === "status@broadcast") return;
 
-    if (
-      from ===
-      "status@broadcast"
-    ) {
-      return;
-    }
-
-    const body =
-      getMessageText(
-        mRaw.message
-      ).trim();
+    const body = getMessageText(mRaw.message).trim();
 
     if (!body) return;
 
-    if (
-      config.AUTO_READ
-    ) {
+    if (config.AUTO_READ) {
       try {
-        await sock.readMessages([
-          mRaw.key
-        ]);
+        await sock.readMessages([mRaw.key]);
       } catch {}
     }
 
-    if (
-      !body.startsWith(
-        config.PREFIX
-      )
-    ) {
-      return;
-    }
+    if (!body.startsWith(config.PREFIX)) return;
 
-    const content =
-      body
-        .slice(
-          config.PREFIX.length
-        )
-        .trim();
+    const content = body.slice(config.PREFIX.length).trim();
 
     if (!content) return;
 
-    const parts =
-      content.split(/\s+/);
-
-    const commandName =
-      parts
-        .shift()
-        ?.toLowerCase();
+    const parts = content.split(/\s+/);
+    const commandName = parts.shift()?.toLowerCase();
 
     if (!commandName) return;
 
     const args = parts;
-
-    const command =
-      commands[commandName];
+    const command = commands[commandName];
 
     if (!command) return;
 
-    const isGroup =
-      from.endsWith("@g.us");
+    const isGroup = from.endsWith("@g.us");
 
-    if (
-      isGroup &&
-      global.mutedGroups.has(from)
-    ) {
+    if (isGroup && global.mutedGroups.has(from)) {
       return;
     }
 
-    const m =
-      createMessageWrapper(
-        sock,
-        mRaw,
-        from,
-        body
-      );
+    const m = createMessageWrapper(sock, mRaw, from, body);
+    const sender = m.sender;
 
-    const sender =
-      m.sender;
-
-    if (
-      global.bannedUsers.has(
-        sender
-      )
-    ) {
+    if (global.bannedUsers.has(sender)) {
       return;
     }
 
-    if (
-      command.groupOnly &&
-      !isGroup
-    ) {
+    if (command.groupOnly && !isGroup) {
       return m.reply(
         "👥 Cette commande fonctionne uniquement dans un groupe."
       );
     }
 
-    if (
-      command.ownerOnly
-    ) {
-      const owners =
-        config.OWNERS
-          .filter(Boolean)
-          .map(
-            number =>
-              `${number}`.replace(
-                /\D/g,
-                ""
-              ) +
-              "@s.whatsapp.net"
-          );
-
-      if (
-        !owners.includes(
-          sender
-        )
-      ) {
-        return m.reply(
-          `☠️ Cette commande est réservée au DEV : ${config.PREFIX}${commandName}`
-        );
-      }
+    if (command.ownerOnly && !isOwner(sender)) {
+      return m.reply(
+        `☠️ Cette commande est réservée au DEV : ${config.PREFIX}${commandName}`
+      );
     }
 
-    if (
-      command.admin &&
-      isGroup
-    ) {
+    if (command.admin && isGroup) {
       try {
-        const metadata =
-          await sock.groupMetadata(
-            from
-          );
+        const metadata = await sock.groupMetadata(from);
 
-        const participant =
-          metadata.participants.find(
-            p =>
-              p.id === sender ||
-              p.lid === sender
-          );
+        const participant = metadata.participants.find(
+          p => p.id === sender || p.lid === sender
+        );
 
-        if (
-          !participant?.admin
-        ) {
+        if (!participant?.admin) {
           return m.reply(
-            `🛡️ Cette commande nécessite les droits administrateur.`
+            "🛡️ Cette commande nécessite les droits administrateur."
           );
         }
       } catch {
@@ -511,54 +363,37 @@ export async function handleCommand(
     }
 
     try {
-      await sock.sendMessage(
-        from,
-        {
-          react: {
-            text: "🩸",
-            key: mRaw.key
-          }
+      await sock.sendMessage(from, {
+        react: {
+          text: "🩸",
+          key: mRaw.key
         }
-      );
+      });
     } catch {}
 
     try {
-      await command.execute(
-        sock,
-        m,
-        args
-      );
+      await command.execute(sock, m, args);
 
       try {
-        await sock.sendMessage(
-          from,
-          {
-            react: {
-              text: "✅",
-              key: mRaw.key
-            }
+        await sock.sendMessage(from, {
+          react: {
+            text: "✅",
+            key: mRaw.key
           }
-        );
+        });
       } catch {}
 
       saveSettings();
-
     } catch (err) {
-      console.log(
-        `❌ Erreur .${commandName}:`,
-        err
-      );
+      console.log(`❌ Erreur .${commandName}:`, err);
 
       try {
-        await sock.sendMessage(
-          from,
-          {
-            react: {
-              text: "❌",
-              key: mRaw.key
-            }
+        await sock.sendMessage(from, {
+          react: {
+            text: "❌",
+            key: mRaw.key
           }
-        );
+        });
       } catch {}
 
       try {
@@ -567,68 +402,43 @@ export async function handleCommand(
         );
       } catch {}
     }
-
   } catch (err) {
-    console.log(
-      "❌ Handler Fatal Error:",
-      err.message
-    );
+    console.log("❌ Handler Fatal Error:", err.message);
   }
 }
 
-export async function handleParticipantUpdate(
-  sock,
-  update
-) {
+export async function handleParticipantUpdate(sock, update) {
   try {
-    const {
-      id,
-      participants,
-      action
-    } = update;
+    const { id, participants, action } = update;
 
     if (
       action === "add" &&
       global.welcomeGroups.has(id)
     ) {
-      const metadata =
-        await sock
-          .groupMetadata(id)
-          .catch(() => null);
+      const metadata = await sock
+        .groupMetadata(id)
+        .catch(() => null);
 
-      const groupName =
-        metadata?.subject ||
-        "Groupe";
+      const groupName = metadata?.subject || "Groupe";
 
-      for (
-        const user
-        of participants
-      ) {
-        await sock.sendMessage(
-          id,
-          {
-            text:
-`╭─❖ 🩸 𝐖𝐄𝐋𝐂𝐎𝐌𝐄 🩸 ❖─╮
+      for (const user of participants || []) {
+        await sock.sendMessage(id, {
+          text: `
+╭─❖ 🩸 𝐖𝐄𝐋𝐂𝐎𝐌𝐄 🩸 ❖─╮
 
 │ ͟͟͞ᬼ⃟─► Groupe : ${groupName}
 │
 │ ͟͟͞ᬼ⃟─► Bienvenue @${user.split("@")[0]}
 
 ╰─────────────❖`,
-            mentions: [user]
-          }
-        );
+          mentions: [user]
+        });
       }
     }
-
   } catch (err) {
-    console.log(
-      "❌ Participant Update:",
-      err.message
-    );
+    console.log("❌ Participant Update:", err.message);
   }
 }
 
-export { commands };
-
+export { commands, saveSettings };
 export default handleCommand;
