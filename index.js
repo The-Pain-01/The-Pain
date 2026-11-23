@@ -1,359 +1,60 @@
-import makeWASocket, {
-  fetchLatestBaileysVersion,
-  Browsers,
-  DisconnectReason,
-  useMultiFileAuthState
-} from "@whiskeysockets/baileys";
+
+import "dotenv/config";
 
 import pino from "pino";
-import readline from "readline";
-import config from "./config.js";
-import { handleCommand, loadCommands } from "./handler.js";
-import { IMAGES, AUDIOS } from "./system/botAssets.js";
+import { loadCommands } from "./handler.js";
 
+const logger = pino({
+  level: process.env.LOG_LEVEL || "info"
+});
 
-console.log(`
+async function start() {
+  try {
+    console.log(`
 ☠️ 𝐓𝐇𝐄 𝐏𝐀𝐈𝐍 𝐌𝐃 ☠️
 
-🚀 SYSTEM STARTING...
+🚀 MULTI-SESSION SYSTEM STARTING...
 `);
 
+    // Charger les commandes
+    const total = await loadCommands();
 
+    console.log(`📦 ${total} commandes chargées`);
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+    // Démarrer le serveur backend
+    const { startServer } = await import("./server.js");
 
+    await startServer();
 
-function ask(text){
+    console.log(`
+✅ BACKEND STARTED
 
-return new Promise(resolve=>{
-
-rl.question(text,answer=>{
-
-resolve(answer);
-
-});
-
-});
-
-}
-
-
-
-async function startBot(){
-
-
-try{
-
-
-const { state, saveCreds } =
-await useMultiFileAuthState("./session");
-
-
-
-const { version } =
-await fetchLatestBaileysVersion();
-
-
-
-const sock =
-makeWASocket({
-
-version,
-
-logger:pino({
-level:"silent"
-}),
-
-browser:
-Browsers.ubuntu("Chrome"),
-
-auth:state,
-
-printQRInTerminal:false,
-
-markOnlineOnConnect:true
-
-});
-
-
-
-if(!state.creds.registered){
-
-
-let number =
-await ask(`
-
-╭─❖ 📱 CONNEXION ❖─╮
-
-Entre ton numéro WhatsApp :
-
-Format :
-✔ Sans +
-✔ Sans espace
-
-Exemple :
-27727500078
-
-Numéro : `);
-
-
-
-number =
-number.replace(/\D/g,"");
-
-
-
-console.log(`
-
-🔐 Génération du code...
-
+☠️ 𝐓𝐇𝐄 𝐏𝐀𝐈𝐍 𝐌𝐃
+🩸 MULTI-SESSION SYSTEM ACTIVE
 `);
-
-
-
-const code =
-await sock.requestPairingCode(number);
-
-
-
-console.log(`
-
-╭─❖ ☠️ CODE PAIRING ☠️ ❖─╮
-
-│ ${code}
-
-╰─────────────❖
-
-`);
-
-
-
-
-try{
-
-
-await sock.sendMessage(
-number+"@s.whatsapp.net",
-{
-
-image:{
-url:IMAGES.connect
-},
-
-caption:`
-
-☠️ 𝐓𝐇𝐄 𝐏𝐀𝐈𝐍 𝐌𝐃 ☠️
-
-
-🔐 Code de connexion :
-
-${code}
-
-
-🩸 Entre ce code dans WhatsApp.
-
-`
-
-
-}
-);
-
-
-
-await sock.sendMessage(
-number+"@s.whatsapp.net",
-{
-
-audio:{
-url:AUDIOS.connect
-},
-
-mimetype:"audio/mpeg"
-
+  } catch (error) {
+    logger.error({ err: error }, "Erreur au démarrage de THE PAIN MD");
+    process.exit(1);
+  }
 }
 
-);
-
-
-
-}
-catch{}
-
-
-
-}
-
-
-
-sock.ev.on(
-"creds.update",
-saveCreds
-);
-
-
-
-sock.ev.on(
-"connection.update",
-async(update)=>{
-
-
-const {
-connection,
-lastDisconnect
-}=update;
-
-
-
-if(connection==="open"){
-
-
-console.log(`
-
-✅ BOT CONNECTÉ
-
-☠️ 𝐓𝐇𝐄 𝐏𝐀𝐈𝐍 𝐌𝐃 ACTIVE
-
-`);
-
-
-}
-
-
-
-if(connection==="close"){
-
-
-const status =
-lastDisconnect
-?.error
-?.output
-?.statusCode;
-
-
-
-if(
-status===DisconnectReason.loggedOut ||
-status===401
-){
-
-
-console.log(
-"❌ Session invalide"
-);
-
-
-}
-else{
-
-
-console.log(
-"🔄 Reconnexion..."
-);
-
-
-startBot();
-
-
-}
-
-
-}
-
-
-
+process.on("uncaughtException", (error) => {
+  logger.fatal({ err: error }, "Erreur non interceptée");
+  process.exit(1);
 });
 
-
-
-sock.ev.on(
-"messages.upsert",
-async({messages})=>{
-
-
-const m =
-messages[0];
-
-
-if(!m?.message)
-return;
-
-
-
-if(
-m.key.remoteJid==="status@broadcast"
-)
-return;
-
-
-
-await handleCommand(
-sock,
-m
-);
-
-
-
+process.on("unhandledRejection", (error) => {
+  logger.error({ err: error }, "Promesse rejetée");
 });
 
+process.on("SIGTERM", () => {
+  logger.info("Arrêt demandé par le serveur");
+  process.exit(0);
+});
 
+process.on("SIGINT", () => {
+  logger.info("Arrêt manuel");
+  process.exit(0);
+});
 
-const total =
-await loadCommands();
-
-
-
-console.log(
-`📦 ${total} commandes chargées`
-);
-
-
-
-}
-catch(err){
-
-
-console.log(
-"❌ ERREUR :",
-err.message
-);
-
-
-setTimeout(
-startBot,
-5000
-);
-
-
-}
-
-
-}
-
-
-
-process.on(
-"uncaughtException",
-err=>
-console.log(
-"Crash :",
-err.message
-)
-);
-
-
-
-process.on(
-"unhandledRejection",
-err=>
-console.log(
-"Rejection :",
-err
-)
-);
-
-
-
-startBot();
+start();
